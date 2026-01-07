@@ -217,15 +217,22 @@
         }
         .completed { opacity: 0.8; background: rgba(255,255,255,0.4); }
 
-        .item-actions { display: flex; gap: 6px; margin-left: 10px; }
+        .item-actions { display: flex; gap: 6px; margin-left: 10px; opacity: 0.6; transition: opacity 0.2s; }
+        .todo-item:hover .item-actions { opacity: 1; }
         .action-icon {
             width: 32px; height: 32px;
             display: flex; align-items: center; justify-content: center;
-            border-radius: 8px; cursor: pointer; color: var(--text-gray);
-            transition: 0.2s; background: rgba(0,0,0,0.03);
+            border-radius: 8px; cursor: pointer; 
+            transition: all 0.2s ease; 
+            background: rgba(0,0,0,0.03);
         }
-        .action-icon:hover { background: white; color: var(--accent-color); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .action-icon.delete:hover { color: #ef4444; background: #fee2e2; }
+        .action-icon i { font-size: 18px; font-weight: 600; }
+        .action-icon.move-up { color: #3b82f6; } /* Up - Blue */
+        .action-icon.move-up:hover { background: #dbeafe; color: #1e40af; transform: translateY(-2px); box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
+        .action-icon.move-down { color: #8b5cf6; } /* Down - Purple */
+        .action-icon.move-down:hover { background: #ede9fe; color: #6d28d9; transform: translateY(2px); box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3); }
+        .action-icon.delete { color: #ef4444; } /* Delete - Red */
+        .action-icon.delete:hover { background: #fee2e2; color: #dc2626; transform: scale(1.1); box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3); }
 
         .empty-state { text-align: center; padding: 4rem 0; color: var(--text-gray); display: none; }
         .empty-state i { font-size: 64px; margin-bottom: 1rem; color: #cbd5e1; display: block; margin: 0 auto 10px auto; }
@@ -266,8 +273,9 @@
             .btn-add { width: 100%; padding: 14px; }
             .todo-item { padding: 12px; }
             .task-text { font-size: 0.95rem; }
-            .item-actions { gap: 4px; }
-            .action-icon { width: 28px; height: 28px; }
+            .item-actions { gap: 4px; margin-left: 8px; }
+            .action-icon { width: 30px; height: 30px; }
+            .action-icon i { font-size: 16px; }
         }
         
         @media (min-width: 641px) and (max-width: 768px) {
@@ -432,9 +440,15 @@ function updateUI() {
             // Tombol admin
             const adminActions = isAdmin ? `
                 <div class="item-actions">
-                    <div class="action-icon" onclick="moveTask(${index}, -1)"><i class="ph ph-caret-up-bold"></i></div>
-                    <div class="action-icon" onclick="moveTask(${index}, 1)"><i class="ph ph-caret-down-bold"></i></div>
-                    <div class="action-icon delete" onclick="deleteTask(${task.id})"><i class="ph ph-trash-bold"></i></div>
+                    <div class="action-icon move-up" onclick="moveTask(${index}, -1)" title="Pindah ke atas ↑">
+                        <i class="ph-bold ph-caret-up"></i>
+                    </div>
+                    <div class="action-icon move-down" onclick="moveTask(${index}, 1)" title="Pindah ke bawah ↓">
+                        <i class="ph-bold ph-caret-down"></i>
+                    </div>
+                    <div class="action-icon delete" onclick="deleteTask(${task.id})" title="Hapus task ✕">
+                        <i class="ph-bold ph-trash"></i>
+                    </div>
                 </div>
             ` : '';
 
