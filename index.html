@@ -294,183 +294,120 @@
         </div>
     </div>
 
-    <script>
-    let tasks = [];
-    let isAdmin = false;
+<script>
+let tasks = [];
+let isAdmin = false;
 
-    window.onload = () => {
-        setTimeout(() => {
-            const loader = document.getElementById('loader');
-            loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 600);
-        }, 800);
+window.onload = () => {
+    setTimeout(() => {
+        const loader = document.getElementById('loader');
+        loader.style.opacity = '0';
+        setTimeout(() => loader.style.display = 'none', 600);
+    }, 800);
 
-        const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-        document.getElementById('dateDisplay').innerText =
-            new Date().toLocaleDateString('id-ID', options);
+    const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    document.getElementById('dateDisplay').innerText =
+        new Date().toLocaleDateString('id-ID', options);
 
-        fetchTasks();
-    };
+    fetchTasks();
+};
 
-    async function fetchTasks() {
-        try {
-            const res = await fetch('api/api.php?action=get_all', {
-                credentials: 'include'
-            });
-            const json = await res.json();
-            if (json.status === 'success') {
-                tasks = json.data;
-                isAdmin = json.isAdmin;
-                updateUI();
-            }
-        } catch (e) {
-            console.error("Error Fetch:", e);
-        }
-    }
-
-    async function addTask() {
-        const input = document.getElementById('newTaskInput');
-        if (!input.value.trim()) return;
-        await apiRequest('add', { task: input.value });
-        input.value = '';
-    }
-
-    async function toggleTask(id) {
-        await apiRequest('toggle', { id: id });
-    }
-
-    async function deleteTask(id) {
-        if (confirm("Yakin hapus tugas ini?")) {
-            await apiRequest('delete', { id: id });
-        }
-    }
-
-    async function resetList() {
-        if (confirm("Reset semua list ke awal?")) {
-            await apiRequest('reset');
-        }
-    }
-
-    async function moveTask(index, direction) {
-        if (
-            (direction === -1 && index === 0) ||
-            (direction === 1 && index === tasks.length - 1)
-        ) return;
-
-        const t1 = tasks[index];
-        const t2 = tasks[index + direction];
-
-        await apiRequest('swap', {
-            id1: t1.id,
-            order1: t1.list_order,
-            id2: t2.id,
-            order2: t2.list_order
-        });
-    }
-
-    async function apiRequest(action, data = {}) {
-        await fetch(`api/api.php?action=${action}`, {
-            method: 'POST',
-            credentials: 'include',
-            body: JSON.stringify(data)
-        });
-        fetchTasks();
-    }
-
-    async function attemptLogin() {
-        const pass = document.getElementById('passwordInput').value;
-        try {
-            const res = await fetch('api/api.php?action=login', {
-                method: 'POST',
-                credentials: 'include',
-                body: JSON.stringify({ password: pass })
-            });
-            const json = await res.json();
-            if (json.status === 'success') {
-                closeModal();
-                fetchTasks();
-            } else {
-                alert("Password Salah!");
-            }
-        } catch (e) {
-            console.error("Login Error:", e);
-        }
-    }
-
-    async function logout() {
-        await fetch('api/api.php?action=logout', {
+async function fetchTasks() {
+    try {
+        const res = await fetch('api/api.php?action=get_all', {
             credentials: 'include'
         });
-        fetchTasks();
+        const json = await res.json();
+        if (json.status === 'success') {
+            tasks = json.data;
+            isAdmin = json.isAdmin;
+            updateUI();
+        }
+    } catch (e) {
+        console.error("Error Fetch:", e);
     }
+}
 
-    function updateUI() {
-        const listEl = document.getElementById('todoList');
-        const adminPanel = document.getElementById('adminPanel');
-        const profileBtn = document.getElementById('profileBtn');
-        const emptyState = document.getElementById('emptyState');
+async function apiRequest(action, data = {}) {
+    await fetch(`api/api.php?action=${action}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+    fetchTasks();
+}
 
-        listEl.innerHTML = '';
+async function addTask() {
+    const input = document.getElementById('newTaskInput');
+    if (!input.value.trim()) return;
+    await apiRequest('add', { task: input.value });
+    input.value = '';
+}
 
-        if (isAdmin) {
-            adminPanel.style.display = 'flex';
-            profileBtn.classList.add('active');
+async function toggleTask(id) {
+    await apiRequest('toggle', { id });
+}
+
+async function deleteTask(id) {
+    if (confirm("Yakin hapus tugas ini?")) {
+        await apiRequest('delete', { id });
+    }
+}
+
+async function resetList() {
+    if (confirm("Reset semua list ke awal?")) {
+        await apiRequest('reset');
+    }
+}
+
+async function moveTask(index, direction) {
+    if (
+        (direction === -1 && index === 0) ||
+        (direction === 1 && index === tasks.length - 1)
+    ) return;
+
+    const t1 = tasks[index];
+    const t2 = tasks[index + direction];
+
+    await apiRequest('swap', {
+        id1: t1.id,
+        order1: t1.list_order,
+        id2: t2.id,
+        order2: t2.list_order
+    });
+}
+
+async function attemptLogin() {
+    const pass = document.getElementById('passwordInput').value;
+    try {
+        const res = await fetch('api/api.php?action=login', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ password: pass })
+        });
+
+        const json = await res.json();
+        if (json.status === 'success') {
+            closeModal();
+            fetchTasks();
         } else {
-            adminPanel.style.display = 'none';
-            profileBtn.classList.remove('active');
+            alert("Password Salah!");
         }
-
-        if (tasks.length === 0) {
-            emptyState.style.display = 'block';
-        } else {
-            emptyState.style.display = 'none';
-            tasks.forEach((task, index) => {
-                const li = document.createElement('li');
-
-                const isDone =
-                    task.is_completed === true ||
-                    task.is_completed == 1 ||
-                    task.is_completed === 't';
-
-                li.className = `todo-item ${isDone ? 'completed' : ''}`;
-
-                const adminActions = isAdmin ? `
-                    <div class="item-actions">
-                        <div class="action-icon" onclick="moveTask(${index}, -1)">
-                            <i class="ph ph-caret-up-bold"></i>
-                        </div>
-                        <div class="action-icon" onclick="moveTask(${index}, 1)">
-                            <i class="ph ph-caret-down-bold"></i>
-                        </div>
-                        <div class="action-icon delete" onclick="deleteTask(${task.id})">
-                            <i class="ph ph-trash-bold"></i>
-                        </div>
-                    </div>
-                ` : '';
-
-                li.innerHTML = `
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" class="custom-checkbox"
-                            ${isDone ? 'checked' : ''}
-                            onchange="toggleTask(${task.id})">
-                    </div>
-                    <span class="task-text">${task.task_name}</span>
-                    ${adminActions}
-                `;
-                listEl.appendChild(li);
-            });
-        }
+    } catch (e) {
+        console.error("Login Error:", e);
     }
+}
 
-    function handleProfileClick() {
-        if (!isAdmin) {
-            document.getElementById('loginModal').style.display = 'flex';
-            document.getElementById('passwordInput').focus();
-        }
-    }
-
-    function closeModal() {
-        document.getElementById('loginModal').style.display = 'none';
-        document.getElementById('passwordInput').value = '';
-    }
+async function logout() {
+    await fetch('api/api.php?action=logout', {
+        credentials: 'include'
+    });
+    fetchTasks();
+}
 </script>
