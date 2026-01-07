@@ -231,6 +231,16 @@
         }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
+        .error-msg {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: none;
+        }
+        
         @media (max-width: 640px) {
             .container { padding: 1.5rem; width: 95%; margin: 20px 0; }
             .brand-title { font-size: 1.75rem; }
@@ -254,6 +264,7 @@
             <h2 style="margin-bottom: 1rem; font-family:'Outfit', sans-serif;">Admin Access</h2>
             <p style="color:#64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
             <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key === 'Enter') attemptLogin()">
+            <div class="error-msg" id="errorMsg"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;">
                 <button onclick="closeModal()" class="btn" style="color:#64748b; background:transparent;">Batal</button>
                 <button class="btn" style="background:var(--primary-gradient); color:white;" onclick="attemptLogin()">Login</button>
@@ -319,17 +330,28 @@ window.addEventListener('load', () => {
 // 2. Fungsi Mengambil Data
 async function fetchTasks() {
     try {
-        const res = await fetch('api/api.php?action=get_all', {
-            credentials: 'include'
+        const res = await fetch('/api/api.php?action=get_all', {
+            credentials: 'include',
+            cache: 'no-cache'
         });
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
         const json = await res.json();
+        console.log('Fetch tasks response:', json);
+        
         if (json.status === 'success') {
             tasks = json.data;
             isAdmin = json.isAdmin;
             updateUI();
+        } else {
+            console.error('Failed to fetch tasks:', json);
         }
     } catch (e) {
         console.error("Error Fetch:", e);
+        showError("Gagal memuat data. Cek koneksi atau konfigurasi database.");
     }
 }
 
@@ -380,12 +402,19 @@ function updateUI() {
                         ${isDone ? 'checked' : ''} 
                         onchange="toggleTask(${task.id})">
                 </div>
-                <span class="task-text">${task.task_name}</span>
+                <span class="task-text">${escapeHtml(task.task_name)}</span>
                 ${adminActions}
             `;
             listEl.appendChild(li);
         });
     }
+}
+
+// Escape HTML untuk mencegah XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // 4. Fungsi Interaksi Profil & Modal
@@ -399,17 +428,39 @@ function handleProfileClick() {
 function closeModal() {
     document.getElementById('loginModal').style.display = 'none';
     document.getElementById('passwordInput').value = '';
+    document.getElementById('errorMsg').style.display = 'none';
+}
+
+function showError(message) {
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.textContent = message;
+    errorMsg.style.display = 'block';
 }
 
 // 5. Fungsi API & Fitur
 async function apiRequest(action, data = {}) {
-    await fetch(`api/api.php?action=${action}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    fetchTasks();
+    try {
+        const res = await fetch(`/api/api.php?action=${action}`, {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-cache',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const json = await res.json();
+        console.log(`API ${action} response:`, json);
+        
+        await fetchTasks();
+        return json;
+    } catch (e) {
+        console.error(`API ${action} error:`, e);
+        throw e;
+    }
 }
 
 async function addTask() {
@@ -442,37 +493,67 @@ async function moveTask(index, direction) {
 }
 
 async function attemptLogin() {
-    const pass = document.getElementById('passwordInput').value.trim();
+    const pass = document.getElementById('passwordInput').value;
+    
+    if (!pass) {
+        showError('Password tidak boleh kosong');
+        return;
+    }
     
     try {
-        const res = await fetch('api/api.php?action=login', {
+        console.log('Attempting login...');
+        
+        const res = await fetch('/api/api.php?action=login', {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-cache',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ password: pass })
         });
         
+        console.log('Login response status:', res.status);
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
         const text = await res.text();
-        console.log('Server response:', text);
+        console.log('Server response (raw):', text);
         
         const json = JSON.parse(text);
+        console.log('Server response (parsed):', json);
         
         if (json.status === 'success') {
+            console.log('Login successful!');
             closeModal();
-            fetchTasks();
+            await fetchTasks();
         } else {
-            alert("Password Salah!");
             console.error('Login failed:', json);
+            showError(json.message || 'Password salah!');
+            
+            // Debugging info
+            if (json.debug) {
+                console.log('Debug info:', json.debug);
+            }
         }
     } catch (e) {
         console.error("Login Error:", e);
-        alert("Error saat login. Cek console untuk detail.");
+        showError("Error saat login. Cek console untuk detail.");
     }
 }
 
 async function logout() {
-    await fetch('api/api.php?action=logout', { credentials: 'include' });
-    fetchTasks();
+    try {
+        await fetch('/api/api.php?action=logout', { 
+            credentials: 'include',
+            cache: 'no-cache'
+        });
+        await fetchTasks();
+    } catch (e) {
+        console.error("Logout error:", e);
+    }
 }
 </script>
 
