@@ -446,14 +446,14 @@ async function attemptLogin() {
     try {
         const res = await fetch('api/api.php?action=login', {
             method: 'POST',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: pass })
+            body: JSON.stringify({ password: pass }) // Kirim objek password
         });
+
         const json = await res.json();
         if (json.status === 'success') {
             closeModal();
-            fetchTasks();
+            location.reload(); // Reload untuk memperbarui status admin
         } else {
             alert("Password Salah!");
         }
