@@ -313,14 +313,15 @@
 
         async function fetchTasks() {
             try {
-                const res = await fetch('api.php?action=get_all');
+                // UPDATE: Menggunakan jalur /api/
+                const res = await fetch('api/api.php?action=get_all');
                 const json = await res.json();
                 if(json.status === 'success') {
                     tasks = json.data;
                     isAdmin = json.isAdmin;
                     updateUI();
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("Error Fetch:", e); }
         }
 
         async function addTask() {
@@ -349,7 +350,8 @@
         }
 
         async function apiRequest(action, data = {}) {
-            await fetch(`api.php?action=${action}`, {
+            // UPDATE: Menggunakan jalur /api/
+            await fetch(`api/api.php?action=${action}`, {
                 method: 'POST', body: JSON.stringify(data)
             });
             fetchTasks();
@@ -357,18 +359,25 @@
 
         async function attemptLogin() {
             const pass = document.getElementById('passwordInput').value;
-            const res = await fetch('api.php?action=login', { method: 'POST', body: JSON.stringify({ password: pass }) });
-            const json = await res.json();
-            if(json.status === 'success') {
-                closeModal();
-                fetchTasks();
-            } else {
-                alert("Password Salah!");
-            }
+            try {
+                // UPDATE: Menggunakan jalur /api/
+                const res = await fetch('api/api.php?action=login', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ password: pass }) 
+                });
+                const json = await res.json();
+                if(json.status === 'success') {
+                    closeModal();
+                    fetchTasks();
+                } else {
+                    alert("Password Salah!");
+                }
+            } catch(e) { console.error("Login Error:", e); }
         }
 
         async function logout() {
-            await fetch('api.php?action=logout');
+            // UPDATE: Menggunakan jalur /api/
+            await fetch('api/api.php?action=logout');
             fetchTasks();
         }
 
@@ -395,7 +404,7 @@
                 tasks.forEach((task, index) => {
                     const li = document.createElement('li');
                     
-                    // PERBAIKAN DI SINI: Mendukung PostgreSQL Boolean
+                    // Mendukung PostgreSQL Boolean
                     const isDone = (task.is_completed === true || task.is_completed == 1 || task.is_completed === 't');
                     
                     li.className = `todo-item ${isDone ? 'completed' : ''}`;
