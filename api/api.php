@@ -108,7 +108,7 @@ if (!is_array($input)) {
     $input = [];
 }
 
-$ADMIN_PASS = 'admin123';
+$ADMIN_PASS = 'cepaimut';
 
 function isAdmin() {
     return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
