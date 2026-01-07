@@ -32,15 +32,13 @@ switch ($action) {
         ]);
         break;
 
-    case 'login':
-        if (($input['password'] ?? '') === $ADMIN_PASS) {
-            $_SESSION['is_admin'] = true;
-            session_write_close(); // Simpan session segera
-            echo json_encode(['status' => 'success']);
-        } else {
-            echo json_encode(['status' => 'error']);
-        }
-        break;
+  case 'login':
+    echo json_encode([
+        'debug_input' => $input,
+        'debug_pass' => $ADMIN_PASS,
+        'match' => (($input['password'] ?? '') === $ADMIN_PASS)
+    ]);
+    exit;
 
     case 'logout':
         session_destroy();
