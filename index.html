@@ -298,6 +298,7 @@
 let tasks = [];
 let isAdmin = false;
 
+// 1. Inisialisasi saat halaman dimuat
 window.addEventListener('load', () => {
     setTimeout(() => {
         const loader = document.getElementById('loader');
@@ -307,12 +308,15 @@ window.addEventListener('load', () => {
     }, 800);
 
     const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    document.getElementById('dateDisplay').innerText =
-        new Date().toLocaleDateString('id-ID', options);
+    const dateDisplay = document.getElementById('dateDisplay');
+    if(dateDisplay) {
+        dateDisplay.innerText = new Date().toLocaleDateString('id-ID', options);
+    }
 
     fetchTasks();
 });
 
+// 2. Fungsi Mengambil Data
 async function fetchTasks() {
     try {
         const res = await fetch('api/api.php?action=get_all', {
@@ -329,13 +333,80 @@ async function fetchTasks() {
     }
 }
 
+// 3. Fungsi Utama UI (PENTING: Agar tombol & list muncul)
+function updateUI() {
+    const listEl = document.getElementById('todoList');
+    const adminPanel = document.getElementById('adminPanel');
+    const profileBtn = document.getElementById('profileBtn');
+    const emptyState = document.getElementById('emptyState');
+
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    // Atur tampilan admin
+    if (isAdmin) {
+        adminPanel.style.display = 'flex';
+        profileBtn.classList.add('active');
+    } else {
+        adminPanel.style.display = 'none';
+        profileBtn.classList.remove('active');
+    }
+
+    // Cek jika list kosong
+    if (tasks.length === 0) {
+        emptyState.style.display = 'block';
+    } else {
+        emptyState.style.display = 'none';
+        tasks.forEach((task, index) => {
+            const li = document.createElement('li');
+            
+            // Cek status checkbox (mendukung boolean PostgreSQL)
+            const isDone = (task.is_completed === true || task.is_completed == 1 || task.is_completed === 't');
+            
+            li.className = `todo-item ${isDone ? 'completed' : ''}`;
+            
+            // Tombol admin (Hanya muncul jika login)
+            const adminActions = isAdmin ? `
+                <div class="item-actions">
+                    <div class="action-icon" onclick="moveTask(${index}, -1)"><i class="ph ph-caret-up-bold"></i></div>
+                    <div class="action-icon" onclick="moveTask(${index}, 1)"><i class="ph ph-caret-down-bold"></i></div>
+                    <div class="action-icon delete" onclick="deleteTask(${task.id})"><i class="ph ph-trash-bold"></i></div>
+                </div>
+            ` : '';
+
+            li.innerHTML = `
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" class="custom-checkbox" 
+                        ${isDone ? 'checked' : ''} 
+                        onchange="toggleTask(${task.id})">
+                </div>
+                <span class="task-text">${task.task_name}</span>
+                ${adminActions}
+            `;
+            listEl.appendChild(li);
+        });
+    }
+}
+
+// 4. Fungsi Interaksi Profil & Modal
+function handleProfileClick() {
+    if (!isAdmin) {
+        document.getElementById('loginModal').style.display = 'flex';
+        document.getElementById('passwordInput').focus();
+    }
+}
+
+function closeModal() {
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('passwordInput').value = '';
+}
+
+// 5. Fungsi API & Fitur
 async function apiRequest(action, data = {}) {
     await fetch(`api/api.php?action=${action}`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
     fetchTasks();
@@ -353,31 +424,20 @@ async function toggleTask(id) {
 }
 
 async function deleteTask(id) {
-    if (confirm("Yakin hapus tugas ini?")) {
-        await apiRequest('delete', { id });
-    }
+    if (confirm("Yakin hapus tugas ini?")) await apiRequest('delete', { id });
 }
 
 async function resetList() {
-    if (confirm("Reset semua list ke awal?")) {
-        await apiRequest('reset');
-    }
+    if (confirm("Reset semua list ke awal?")) await apiRequest('reset');
 }
 
 async function moveTask(index, direction) {
-    if (
-        (direction === -1 && index === 0) ||
-        (direction === 1 && index === tasks.length - 1)
-    ) return;
-
+    if ((direction === -1 && index === 0) || (direction === 1 && index === tasks.length - 1)) return;
     const t1 = tasks[index];
     const t2 = tasks[index + direction];
-
     await apiRequest('swap', {
-        id1: t1.id,
-        order1: t1.list_order,
-        id2: t2.id,
-        order2: t2.list_order
+        id1: t1.id, order1: t1.list_order,
+        id2: t2.id, order2: t2.list_order
     });
 }
 
@@ -387,12 +447,9 @@ async function attemptLogin() {
         const res = await fetch('api/api.php?action=login', {
             method: 'POST',
             credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password: pass })
         });
-
         const json = await res.json();
         if (json.status === 'success') {
             closeModal();
@@ -406,9 +463,7 @@ async function attemptLogin() {
 }
 
 async function logout() {
-    await fetch('api/api.php?action=logout', {
-        credentials: 'include'
-    });
+    await fetch('api/api.php?action=logout', { credentials: 'include' });
     fetchTasks();
 }
 </script>
