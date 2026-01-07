@@ -253,7 +253,7 @@
         <div class="modal-content">
             <h2 style="margin-bottom: 1rem; font-family:'Outfit', sans-serif;">Admin Access</h2>
             <p style="color:#64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
-            <input type="password" id="passwordInput" placeholder="Password (admin123)">
+            <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key === 'Enter') attemptLogin()">
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;">
                 <button onclick="closeModal()" class="btn" style="color:#64748b; background:transparent;">Batal</button>
                 <button class="btn" style="background:var(--primary-gradient); color:white;" onclick="attemptLogin()">Login</button>
@@ -333,7 +333,7 @@ async function fetchTasks() {
     }
 }
 
-// 3. Fungsi Utama UI (PENTING: Agar tombol & list muncul)
+// 3. Fungsi Utama UI
 function updateUI() {
     const listEl = document.getElementById('todoList');
     const adminPanel = document.getElementById('adminPanel');
@@ -360,12 +360,12 @@ function updateUI() {
         tasks.forEach((task, index) => {
             const li = document.createElement('li');
             
-            // Cek status checkbox (mendukung boolean PostgreSQL)
+            // Cek status checkbox
             const isDone = (task.is_completed === true || task.is_completed == 1 || task.is_completed === 't');
             
             li.className = `todo-item ${isDone ? 'completed' : ''}`;
             
-            // Tombol admin (Hanya muncul jika login)
+            // Tombol admin
             const adminActions = isAdmin ? `
                 <div class="item-actions">
                     <div class="action-icon" onclick="moveTask(${index}, -1)"><i class="ph ph-caret-up-bold"></i></div>
@@ -442,23 +442,31 @@ async function moveTask(index, direction) {
 }
 
 async function attemptLogin() {
-    const pass = document.getElementById('passwordInput').value;
+    const pass = document.getElementById('passwordInput').value.trim();
+    
     try {
         const res = await fetch('api/api.php?action=login', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: pass }) // Kirim objek password
+            body: JSON.stringify({ password: pass })
         });
-
-        const json = await res.json();
+        
+        const text = await res.text();
+        console.log('Server response:', text);
+        
+        const json = JSON.parse(text);
+        
         if (json.status === 'success') {
             closeModal();
-            location.reload(); // Reload untuk memperbarui status admin
+            fetchTasks();
         } else {
             alert("Password Salah!");
+            console.error('Login failed:', json);
         }
     } catch (e) {
         console.error("Login Error:", e);
+        alert("Error saat login. Cek console untuk detail.");
     }
 }
 
@@ -467,3 +475,6 @@ async function logout() {
     fetchTasks();
 }
 </script>
+
+</body>
+</html>
