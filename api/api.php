@@ -64,10 +64,20 @@ function getTasks() {
         saveTasks($defaultTasks);
         return $defaultTasks;
     }
-    return json_decode($tasksJson, true);
+    
+    $tasks = json_decode($tasksJson, true);
+    
+    // Sort by list_order untuk display consistency
+    if (is_array($tasks)) {
+        usort($tasks, function($a, $b) {
+            return ($a['list_order'] ?? 0) - ($b['list_order'] ?? 0);
+        });
+    }
+    
+    return $tasks;
 }
 
-// Save tasks to Redis
+// Save tasks to Redis (tidak mengubah order)
 function saveTasks($tasks) {
     redisCommand('SET', ['tasks', json_encode($tasks)]);
 }
@@ -178,15 +188,23 @@ switch ($action) {
             $id = $input['id'] ?? 0;
             $tasks = getTasks();
             
+            // Toggle status tanpa mengubah order
+            $found = false;
             foreach ($tasks as &$task) {
                 if ($task['id'] == $id) {
                     $task['is_completed'] = !$task['is_completed'];
+                    $found = true;
                     break;
                 }
             }
+            unset($task); // Break reference
             
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'message' => 'Task toggled']);
+            if ($found) {
+                saveTasks($tasks);
+                echo json_encode(['status' => 'success', 'message' => 'Task toggled']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Task not found']);
+            }
         } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
@@ -230,6 +248,47 @@ switch ($action) {
         }
         break;
 
+    case 'clear_completed':
+        if (!isAdmin()) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+            exit;
+        }
+        
+        try {
+            $tasks = getTasks();
+            // Filter out completed tasks
+            $tasks = array_values(array_filter($tasks, function($task) {
+                return !$task['is_completed'];
+            }));
+            
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'message' => 'Completed tasks cleared']);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+        break;
+
+    case 'uncheck_all':
+        if (!isAdmin()) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+            exit;
+        }
+        
+        try {
+            $tasks = getTasks();
+            // Uncheck all tasks
+            foreach ($tasks as &$task) {
+                $task['is_completed'] = false;
+            }
+            unset($task);
+            
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'message' => 'All tasks unchecked']);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+        break;
+
     case 'swap':
         if (!isAdmin()) {
             echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
@@ -243,6 +302,7 @@ switch ($action) {
             $order1 = $input['order1'];
             $order2 = $input['order2'];
             
+            // Swap order tanpa sorting
             foreach ($tasks as &$task) {
                 if ($task['id'] == $id1) {
                     $task['list_order'] = $order2;
@@ -250,11 +310,7 @@ switch ($action) {
                     $task['list_order'] = $order1;
                 }
             }
-            
-            // Sort by order
-            usort($tasks, function($a, $b) {
-                return $a['list_order'] - $b['list_order'];
-            });
+            unset($task); // Break reference
             
             saveTasks($tasks);
             echo json_encode(['status' => 'success', 'message' => 'Tasks swapped']);

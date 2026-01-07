@@ -291,6 +291,8 @@
                 </button>
             </div>
             <div class="admin-tools">
+                <button class="btn btn-sm" style="background:#dbeafe; color:#1e40af;" onclick="uncheckAll()">Uncheck All</button>
+                <button class="btn btn-sm" style="background:#fef3c7; color:#92400e;" onclick="clearCompleted()">Clear Completed</button>
                 <button class="btn btn-sm btn-danger" onclick="resetList()">Reset All</button>
                 <button class="btn btn-sm btn-logout" onclick="logout()">Logout</button>
             </div>
@@ -480,6 +482,17 @@ async function deleteTask(id) {
 
 async function resetList() {
     if (confirm("Reset semua list ke awal?")) await apiRequest('reset');
+}
+
+async function clearCompleted() {
+    const completedCount = tasks.filter(t => t.is_completed).length;
+    if (completedCount === 0) {
+        alert("Tidak ada task yang sudah selesai.");
+        return;
+    }
+    if (confirm(`Hapus ${completedCount} task yang sudah selesai?`)) {
+        await apiRequest('clear_completed');
+    }
 }
 
 async function moveTask(index, direction) {
