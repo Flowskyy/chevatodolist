@@ -1,6 +1,6 @@
 <?php
 session_start();
-header('Content-Type: application/json');
+// Jangan ada spasi atau baris kosong sebelum <?php
 
 // 1. KONEKSI DATABASE
 $dsn = getenv('POSTGRES_URL'); 
@@ -9,7 +9,8 @@ try {
     $pdo = new PDO($dsn);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()]);
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'DB Error']);
     exit;
 }
 
@@ -21,7 +22,8 @@ function isAdmin() {
     return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 }
 
-// 2. LOGIKA API
+header('Content-Type: application/json');
+
 switch ($action) {
     case 'get_all':
         $stmt = $pdo->query("SELECT * FROM tasks ORDER BY list_order ASC, id ASC");
@@ -33,12 +35,14 @@ switch ($action) {
         break;
 
     case 'login':
-        if (($input['password'] ?? '') === $ADMIN_PASS) {
+        $submittedPass = $input['password'] ?? '';
+        if ($submittedPass === $ADMIN_PASS) {
             $_SESSION['is_admin'] = true;
-            session_write_close(); // Simpan session segera
+            session_write_close(); 
             echo json_encode(['status' => 'success']);
         } else {
-            echo json_encode(['status' => 'error']);
+            http_response_code(401); // Kirim status unauthorized
+            echo json_encode(['status' => 'error', 'message' => 'Password salah']);
         }
         break;
 
@@ -48,7 +52,7 @@ switch ($action) {
         break;
 
     case 'add':
-        if (!isAdmin()) exit;
+        if (!isAdmin()) { http_response_code(403); exit; }
         $max = $pdo->query("SELECT COALESCE(MAX(list_order), 0) FROM tasks")->fetchColumn();
         $stmt = $pdo->prepare("INSERT INTO tasks (task_name, list_order) VALUES (?, ?)");
         $stmt->execute([$input['task'], (int)$max + 1]);
@@ -62,21 +66,14 @@ switch ($action) {
         break;
 
     case 'delete':
-        if (!isAdmin()) exit;
+        if (!isAdmin()) { http_response_code(403); exit; }
         $stmt = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
         $stmt->execute([$input['id']]);
         echo json_encode(['status' => 'success']);
         break;
 
-    case 'reset':
-        if (!isAdmin()) exit;
-        $pdo->exec("TRUNCATE TABLE tasks RESTART IDENTITY");
-        $pdo->exec("INSERT INTO tasks (task_name, list_order) VALUES ('List telah direset oleh Admin', 1)");
-        echo json_encode(['status' => 'success']);
-        break;
-
     case 'swap':
-        if (!isAdmin()) exit;
+        if (!isAdmin()) { http_response_code(403); exit; }
         $pdo->prepare("UPDATE tasks SET list_order = ? WHERE id = ?")->execute([$input['order2'], $input['id1']]);
         $pdo->prepare("UPDATE tasks SET list_order = ? WHERE id = ?")->execute([$input['order1'], $input['id2']]);
         echo json_encode(['status' => 'success']);
