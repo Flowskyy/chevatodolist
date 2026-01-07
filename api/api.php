@@ -8,20 +8,37 @@ session_start();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Credentials: true');
 
-// DB CONNECTION
-$dsn = getenv('POSTGRES_URL');
+// DB CONNECTION untuk Neon Database
+// Neon biasanya pakai DATABASE_URL
+$dsn = getenv('DATABASE_URL') ?: getenv('POSTGRES_URL');
 
 if (!$dsn) {
-    echo json_encode(['status' => 'error', 'message' => 'Database URL not configured']);
+    echo json_encode([
+        'status' => 'error', 
+        'message' => 'Database URL not configured',
+        'hint' => 'Set DATABASE_URL di Vercel Environment Variables'
+    ]);
     exit;
 }
 
 try {
-    $pdo = new PDO($dsn);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    // Koneksi dengan SSL untuk Neon
+    $pdo = new PDO($dsn, null, null, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false
+    ]);
+    
+    // Set timezone dan charset
+    $pdo->exec("SET NAMES 'utf8'");
+    $pdo->exec("SET TIME ZONE 'Asia/Jakarta'");
+    
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $e->getMessage()]);
+    echo json_encode([
+        'status' => 'error', 
+        'message' => 'Database connection failed',
+        'error' => $e->getMessage()
+    ]);
     exit;
 }
 
