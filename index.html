@@ -144,8 +144,12 @@
             outline: none; transition: 0.3s;
             background: #f8fafc;
             font-family: 'Plus Jakarta Sans', sans-serif;
+            width: 100%;
         }
         input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent-color); background: white; }
+        
+        #togglePassword:hover { color: var(--accent-color); }
+        #togglePassword:active { transform: translateY(-50%) scale(0.95); }
         
         .btn {
             border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 20px;
@@ -299,7 +303,12 @@
         <div class="modal-content">
             <h2 style="margin-bottom: 1rem; font-family:'Outfit', sans-serif;">Admin Access</h2>
             <p style="color:#64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
-            <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key === 'Enter') attemptLogin()">
+            <div style="position: relative;">
+                <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key === 'Enter') attemptLogin()" style="padding-right: 45px;">
+                <button type="button" id="togglePassword" onclick="togglePasswordVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; padding: 8px; display: flex; align-items: center; justify-content: center;" title="Show/Hide password">
+                    <i class="ph-bold ph-eye" id="eyeIcon" style="font-size: 20px;"></i>
+                </button>
+            </div>
             <div class="error-msg" id="errorMsg"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;">
                 <button onclick="closeModal()" class="btn" style="color:#64748b; background:transparent;">Batal</button>
@@ -321,9 +330,9 @@
 
         <div class="admin-controls" id="adminPanel">
             <div class="input-wrapper">
-                <input type="text" id="newTaskInput" placeholder="Apa yang harus dilakukan?" onkeypress="if(event.key === 'Enter') addTask()">
-                <button class="btn btn-add" onclick="addTask()">
-                    <i class="ph ph-plus-bold" style="font-size:18px;"></i>
+                <input type="text" id="newTaskInput" placeholder="Apa yang harus dilakukan oleh cepaaa?" onkeypress="if(event.key === 'Enter') addTask()">
+                <button class="btn btn-add" onclick="addTask()" title="Tambah task">
+                    <i class="ph-bold ph-plus" style="font-size:20px;"></i>
                 </button>
             </div>
             <div class="admin-tools">
@@ -484,7 +493,22 @@ function handleProfileClick() {
 function closeModal() {
     document.getElementById('loginModal').style.display = 'none';
     document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').type = 'password';
+    document.getElementById('eyeIcon').className = 'ph-bold ph-eye';
     document.getElementById('errorMsg').style.display = 'none';
+}
+
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('passwordInput');
+    const eyeIcon = document.getElementById('eyeIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.className = 'ph-bold ph-eye-slash';
+    } else {
+        passwordInput.type = 'password';
+        eyeIcon.className = 'ph-bold ph-eye';
+    }
 }
 
 function showError(message) {
@@ -531,11 +555,11 @@ async function toggleTask(id) {
 }
 
 async function deleteTask(id) {
-    if (confirm("Yakin hapus tugas ini?")) await apiRequest('delete', { id });
+    if (confirm("Yakin hapus tugas ini cepaa?")) await apiRequest('delete', { id });
 }
 
 async function resetList() {
-    if (confirm("Reset semua list ke awal?")) await apiRequest('reset');
+    if (confirm("Kamu yakin reset semua list ke awal?")) await apiRequest('reset');
 }
 
 async function clearCompleted() {
