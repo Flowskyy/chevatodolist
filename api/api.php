@@ -1,25 +1,85 @@
 <?php
-// Konfigurasi session untuk Vercel - PENTING!
+// Konfigurasi session untuk Vercel
 ini_set('session.use_cookies', '1');
 ini_set('session.use_only_cookies', '1');
 ini_set('session.cookie_httponly', '1');
 ini_set('session.cookie_samesite', 'Lax');
-ini_set('session.cookie_secure', '0'); // Set '1' jika pakai HTTPS
+ini_set('session.cookie_secure', '0');
 
-// Start session SEBELUM output apapun
 session_start();
 
-// Headers - Set setelah session_start
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Credentials: true');
 
-// Import koneksi database
-$pdo = require_once __DIR__ . '/db.php';
+// Upstash Redis REST API Configuration
+$UPSTASH_URL = getenv('UPSTASH_REDIS_REST_URL');
+$UPSTASH_TOKEN = getenv('UPSTASH_REDIS_REST_TOKEN');
 
-// Get action
+if (!$UPSTASH_URL || !$UPSTASH_TOKEN) {
+    die(json_encode([
+        'status' => 'error',
+        'message' => 'Redis configuration not found',
+        'hint' => 'Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel'
+    ]));
+}
+
+// Helper function untuk Redis REST API
+function redisCommand($command, $args = []) {
+    global $UPSTASH_URL, $UPSTASH_TOKEN;
+    
+    $data = array_merge([$command], $args);
+    
+    $ch = curl_init($UPSTASH_URL);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $UPSTASH_TOKEN,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {
+        error_log("Redis command failed: $command");
+        return null;
+    }
+    
+    $result = json_decode($response, true);
+    return $result['result'] ?? null;
+}
+
+// Get tasks from Redis
+function getTasks() {
+    $tasksJson = redisCommand('GET', ['tasks']);
+    if (!$tasksJson) {
+        // Initialize dengan data default
+        $defaultTasks = [
+            ['id' => 1, 'task_name' => 'Selamat datang di Cheva\'s To Do List!', 'list_order' => 1, 'is_completed' => false],
+            ['id' => 2, 'task_name' => 'Login sebagai admin untuk mengedit list', 'list_order' => 2, 'is_completed' => false],
+            ['id' => 3, 'task_name' => 'Password: admin123', 'list_order' => 3, 'is_completed' => false]
+        ];
+        saveTasks($defaultTasks);
+        return $defaultTasks;
+    }
+    return json_decode($tasksJson, true);
+}
+
+// Save tasks to Redis
+function saveTasks($tasks) {
+    redisCommand('SET', ['tasks', json_encode($tasks)]);
+}
+
+// Get next ID
+function getNextId($tasks) {
+    if (empty($tasks)) return 1;
+    $ids = array_column($tasks, 'id');
+    return max($ids) + 1;
+}
+
 $action = $_GET['action'] ?? '';
-
-// Get input data
 $raw = file_get_contents('php://input');
 $input = json_decode($raw, true);
 
@@ -27,39 +87,23 @@ if (!is_array($input)) {
     $input = [];
 }
 
-// Admin password
 $ADMIN_PASS = 'admin123';
 
-// Helper function
 function isAdmin() {
     return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 }
 
-// Debug helper (hapus setelah selesai debugging)
-function debugLog($message, $data = null) {
-    error_log("[TODO-DEBUG] $message: " . json_encode($data));
-}
-
-// Route handler
 switch ($action) {
 
     case 'get_all':
         try {
-            $stmt = $pdo->query("SELECT * FROM tasks ORDER BY list_order ASC, id ASC");
-            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            debugLog("get_all", [
-                'count' => count($data),
-                'isAdmin' => isAdmin(),
-                'session_id' => session_id()
-            ]);
-            
+            $tasks = getTasks();
             echo json_encode([
                 'status' => 'success',
-                'data' => $data,
+                'data' => $tasks,
                 'isAdmin' => isAdmin()
             ]);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
         break;
@@ -67,54 +111,25 @@ switch ($action) {
     case 'login':
         $password = $input['password'] ?? '';
         
-        debugLog("login_attempt", [
-            'password_length' => strlen($password),
-            'expected_length' => strlen($ADMIN_PASS),
-            'match' => ($password === $ADMIN_PASS),
-            'session_id_before' => session_id()
-        ]);
-        
         if ($password === $ADMIN_PASS) {
             $_SESSION['is_admin'] = true;
-            
-            // Regenerate session ID untuk keamanan
             session_regenerate_id(true);
-            
-            debugLog("login_success", [
-                'session_id_after' => session_id(),
-                'session_data' => $_SESSION
-            ]);
             
             echo json_encode([
                 'status' => 'success',
                 'message' => 'Login successful',
-                'isAdmin' => true,
-                'session_id' => session_id()
+                'isAdmin' => true
             ]);
         } else {
-            debugLog("login_failed", [
-                'received' => $password,
-                'expected' => $ADMIN_PASS
-            ]);
-            
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Password salah',
-                'debug' => [
-                    'received_pass' => $password,
-                    'received_length' => strlen($password),
-                    'expected_length' => strlen($ADMIN_PASS)
-                ]
+                'message' => 'Password salah'
             ]);
         }
         break;
 
     case 'logout':
-        debugLog("logout", ['session_before' => $_SESSION]);
-        
         $_SESSION = [];
-        
-        // Hapus cookie session
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
             setcookie(session_name(), '', time() - 42000,
@@ -122,7 +137,6 @@ switch ($action) {
                 $params["secure"], $params["httponly"]
             );
         }
-        
         session_destroy();
         echo json_encode(['status' => 'success', 'message' => 'Logged out']);
         break;
@@ -140,12 +154,21 @@ switch ($action) {
                 exit;
             }
             
-            $max = $pdo->query("SELECT COALESCE(MAX(list_order), 0) FROM tasks")->fetchColumn();
-            $stmt = $pdo->prepare("INSERT INTO tasks (task_name, list_order, is_completed) VALUES (?, ?, false)");
-            $stmt->execute([$taskName, $max + 1]);
+            $tasks = getTasks();
+            $maxOrder = empty($tasks) ? 0 : max(array_column($tasks, 'list_order'));
+            
+            $newTask = [
+                'id' => getNextId($tasks),
+                'task_name' => $taskName,
+                'list_order' => $maxOrder + 1,
+                'is_completed' => false
+            ];
+            
+            $tasks[] = $newTask;
+            saveTasks($tasks);
             
             echo json_encode(['status' => 'success', 'message' => 'Task added']);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
         break;
@@ -153,11 +176,18 @@ switch ($action) {
     case 'toggle':
         try {
             $id = $input['id'] ?? 0;
-            $stmt = $pdo->prepare("UPDATE tasks SET is_completed = NOT is_completed WHERE id = ?");
-            $stmt->execute([$id]);
+            $tasks = getTasks();
             
+            foreach ($tasks as &$task) {
+                if ($task['id'] == $id) {
+                    $task['is_completed'] = !$task['is_completed'];
+                    break;
+                }
+            }
+            
+            saveTasks($tasks);
             echo json_encode(['status' => 'success', 'message' => 'Task toggled']);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
         break;
@@ -170,11 +200,14 @@ switch ($action) {
         
         try {
             $id = $input['id'] ?? 0;
-            $stmt = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
-            $stmt->execute([$id]);
+            $tasks = getTasks();
+            $tasks = array_values(array_filter($tasks, function($task) use ($id) {
+                return $task['id'] != $id;
+            }));
             
+            saveTasks($tasks);
             echo json_encode(['status' => 'success', 'message' => 'Task deleted']);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
         break;
@@ -186,11 +219,13 @@ switch ($action) {
         }
         
         try {
-            $pdo->exec("TRUNCATE TABLE tasks RESTART IDENTITY");
-            $pdo->exec("INSERT INTO tasks (task_name, list_order, is_completed) VALUES ('List telah direset oleh Admin', 1, false)");
+            $tasks = [
+                ['id' => 1, 'task_name' => 'List telah direset oleh Admin', 'list_order' => 1, 'is_completed' => false]
+            ];
+            saveTasks($tasks);
             
             echo json_encode(['status' => 'success', 'message' => 'List reset']);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
         break;
@@ -202,13 +237,28 @@ switch ($action) {
         }
         
         try {
-            $pdo->prepare("UPDATE tasks SET list_order = ? WHERE id = ?")
-                ->execute([$input['order2'], $input['id1']]);
-            $pdo->prepare("UPDATE tasks SET list_order = ? WHERE id = ?")
-                ->execute([$input['order1'], $input['id2']]);
+            $tasks = getTasks();
+            $id1 = $input['id1'];
+            $id2 = $input['id2'];
+            $order1 = $input['order1'];
+            $order2 = $input['order2'];
             
+            foreach ($tasks as &$task) {
+                if ($task['id'] == $id1) {
+                    $task['list_order'] = $order2;
+                } else if ($task['id'] == $id2) {
+                    $task['list_order'] = $order1;
+                }
+            }
+            
+            // Sort by order
+            usort($tasks, function($a, $b) {
+                return $a['list_order'] - $b['list_order'];
+            });
+            
+            saveTasks($tasks);
             echo json_encode(['status' => 'success', 'message' => 'Tasks swapped']);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
         break;
