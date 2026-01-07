@@ -34,7 +34,7 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center; /* Center Vertically */
+            align-items: center;
             overflow-x: hidden;
             position: relative;
         }
@@ -84,7 +84,6 @@
             transition: transform 0.3s;
         }
         
-        /* HEADER */
         header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
         .brand-title {
             font-family: 'Outfit', sans-serif;
@@ -109,7 +108,6 @@
             border: 1px solid white;
         }
 
-        /* PROFILE BUTTON */
         .profile-btn {
             background: white;
             border: none;
@@ -124,7 +122,6 @@
         .profile-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2); color: var(--accent-color); }
         .profile-btn.active { background: var(--primary-gradient); color: white; }
 
-        /* --- 5. ADMIN PANEL --- */
         .admin-controls {
             background: white;
             padding: 1.5rem;
@@ -132,23 +129,22 @@
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
             border: 1px solid rgba(0,0,0,0.05);
-            display: none; /* JS toggles this */
+            display: none;
             flex-direction: column; gap: 12px;
             animation: slideDown 0.3s ease-out;
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         .input-wrapper { display: flex; gap: 10px; position: relative; }
-        input[type="text"] {
+        input[type="text"], input[type="password"] {
             flex-grow: 1;
             padding: 14px 16px;
             border-radius: 12px;
             border: 2px solid #e2e8f0;
-            font-family: var(--font-main);
             outline: none; transition: 0.3s;
             background: #f8fafc;
         }
-        input[type="text"]:focus { border-color: var(--accent-color); background: white; }
+        input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent-color); background: white; }
         
         .btn {
             border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 0 20px;
@@ -163,7 +159,6 @@
         .btn-danger:hover { background: #ef4444; color: white; }
         .btn-logout { background: #f1f5f9; color: var(--text-gray); }
 
-        /* --- 6. TODO LIST ITEMS (FLOATING CARDS) --- */
         ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
         
         .todo-item {
@@ -182,7 +177,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.03);
         }
         
-        /* Checkbox Styling */
         .checkbox-wrapper { margin-right: 16px; position: relative; display: flex; align-items: center; }
         .custom-checkbox {
             appearance: none; width: 26px; height: 26px;
@@ -210,7 +204,6 @@
         }
         .completed { opacity: 0.8; background: rgba(255,255,255,0.4); }
 
-        /* Admin Item Actions */
         .item-actions { display: flex; gap: 6px; margin-left: 10px; }
         .action-icon {
             width: 32px; height: 32px;
@@ -221,11 +214,9 @@
         .action-icon:hover { background: white; color: var(--accent-color); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .action-icon.delete:hover { color: #ef4444; background: #fee2e2; }
 
-        /* --- 7. EMPTY STATE --- */
         .empty-state { text-align: center; padding: 4rem 0; color: var(--text-gray); display: none; }
         .empty-state i { font-size: 64px; margin-bottom: 1rem; color: #cbd5e1; display: block; margin: 0 auto 10px auto; }
         
-        /* --- 8. MODAL --- */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
@@ -240,7 +231,6 @@
         }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        /* RESPONSIVE */
         @media (max-width: 640px) {
             .container { padding: 1.5rem; width: 95%; margin: 20px 0; }
             .brand-title { font-size: 1.75rem; }
@@ -263,8 +253,8 @@
         <div class="modal-content">
             <h2 style="margin-bottom: 1rem; font-family:'Outfit', sans-serif;">Admin Access</h2>
             <p style="color:#64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
-            <input type="password" id="passwordInput" placeholder="Password (admin123)" style="width:100%; margin-bottom:1.5rem;">
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <input type="password" id="passwordInput" placeholder="Password (admin123)">
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;">
                 <button onclick="closeModal()" class="btn" style="color:#64748b; background:transparent;">Batal</button>
                 <button class="btn" style="background:var(--primary-gradient); color:white;" onclick="attemptLogin()">Login</button>
             </div>
@@ -305,26 +295,22 @@
     </div>
 
     <script>
-        // --- LOGIC JAVASCRIPT ---
         let tasks = [];
         let isAdmin = false;
 
         window.onload = () => {
-            // Loading Animation
             setTimeout(() => {
                 const loader = document.getElementById('loader');
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 600);
             }, 800);
 
-            // Date
             const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
             document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
 
             fetchTasks();
         };
 
-        // --- FETCHING DATA ---
         async function fetchTasks() {
             try {
                 const res = await fetch('api.php?action=get_all');
@@ -337,7 +323,6 @@
             } catch(e) { console.error(e); }
         }
 
-        // --- ACTIONS ---
         async function addTask() {
             const input = document.getElementById('newTaskInput');
             if(!input.value.trim()) return;
@@ -370,7 +355,6 @@
             fetchTasks();
         }
 
-        // --- AUTH ---
         async function attemptLogin() {
             const pass = document.getElementById('passwordInput').value;
             const res = await fetch('api.php?action=login', { method: 'POST', body: JSON.stringify({ password: pass }) });
@@ -388,7 +372,6 @@
             fetchTasks();
         }
 
-        // --- UI RENDERING ---
         function updateUI() {
             const listEl = document.getElementById('todoList');
             const adminPanel = document.getElementById('adminPanel');
@@ -397,7 +380,6 @@
 
             listEl.innerHTML = '';
 
-            // Toggle Admin Panel with Animation
             if (isAdmin) {
                 adminPanel.style.display = 'flex';
                 profileBtn.classList.add('active');
@@ -412,7 +394,11 @@
                 emptyState.style.display = 'none';
                 tasks.forEach((task, index) => {
                     const li = document.createElement('li');
-                    li.className = `todo-item ${task.is_completed == 1 ? 'completed' : ''}`;
+                    
+                    // PERBAIKAN DI SINI: Mendukung PostgreSQL Boolean
+                    const isDone = (task.is_completed === true || task.is_completed == 1 || task.is_completed === 't');
+                    
+                    li.className = `todo-item ${isDone ? 'completed' : ''}`;
                     
                     const adminActions = isAdmin ? `
                         <div class="item-actions">
@@ -425,7 +411,7 @@
                     li.innerHTML = `
                         <div class="checkbox-wrapper">
                             <input type="checkbox" class="custom-checkbox" 
-                                ${task.is_completed == 1 ? 'checked' : ''} 
+                                ${isDone ? 'checked' : ''} 
                                 onchange="toggleTask(${task.id})">
                         </div>
                         <span class="task-text">${task.task_name}</span>
