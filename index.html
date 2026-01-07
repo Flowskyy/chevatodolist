@@ -135,7 +135,7 @@
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .input-wrapper { display: flex; gap: 10px; position: relative; }
+        .input-wrapper { display: flex; gap: 10px; position: relative; align-items: stretch; }
         input[type="text"], input[type="password"] {
             flex-grow: 1;
             padding: 14px 16px;
@@ -143,21 +143,34 @@
             border: 2px solid #e2e8f0;
             outline: none; transition: 0.3s;
             background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
         input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent-color); background: white; }
         
         .btn {
-            border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 0 20px;
+            border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 20px;
             transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
-        .btn-add { background: var(--text-dark); color: white; }
+        .btn-add { background: var(--text-dark); color: white; min-width: 50px; }
         .btn-add:hover { background: black; transform: scale(1.05); }
         
-        .admin-tools { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; }
-        .btn-sm { font-size: 0.8rem; padding: 8px 16px; border-radius: 8px; }
+        .admin-tools { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+        .btn-sm { 
+            font-size: 0.8rem; padding: 8px 12px; border-radius: 8px; 
+            display: flex; align-items: center; gap: 5px; white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+        .btn-sm:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .btn-sm i { font-size: 14px; }
+        .btn-uncheck { background: #dbeafe; color: #1e40af; }
+        .btn-uncheck:hover { background: #1e40af; color: white; }
+        .btn-clear { background: #fef3c7; color: #92400e; }
+        .btn-clear:hover { background: #f59e0b; color: white; }
         .btn-danger { background: #fee2e2; color: #ef4444; }
         .btn-danger:hover { background: #ef4444; color: white; }
         .btn-logout { background: #f1f5f9; color: var(--text-gray); }
+        .btn-logout:hover { background: #e2e8f0; color: var(--text-dark); }
 
         ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
         
@@ -245,6 +258,21 @@
             .container { padding: 1.5rem; width: 95%; margin: 20px 0; }
             .brand-title { font-size: 1.75rem; }
             .blob-1 { width: 200px; height: 200px; }
+            .admin-tools { justify-content: center; gap: 6px; }
+            .btn-sm { font-size: 0.75rem; padding: 7px 10px; }
+            .btn-sm .btn-text { display: none; }
+            .btn-sm i { font-size: 16px; }
+            .input-wrapper { flex-direction: column; }
+            .btn-add { width: 100%; padding: 14px; }
+            .todo-item { padding: 12px; }
+            .task-text { font-size: 0.95rem; }
+            .item-actions { gap: 4px; }
+            .action-icon { width: 28px; height: 28px; }
+        }
+        
+        @media (min-width: 641px) and (max-width: 768px) {
+            .admin-tools { gap: 6px; }
+            .btn-sm { font-size: 0.75rem; padding: 7px 10px; }
         }
     </style>
 </head>
@@ -291,10 +319,22 @@
                 </button>
             </div>
             <div class="admin-tools">
-                <button class="btn btn-sm" style="background:#dbeafe; color:#1e40af;" onclick="uncheckAll()">Uncheck All</button>
-                <button class="btn btn-sm" style="background:#fef3c7; color:#92400e;" onclick="clearCompleted()">Clear Completed</button>
-                <button class="btn btn-sm btn-danger" onclick="resetList()">Reset All</button>
-                <button class="btn btn-sm btn-logout" onclick="logout()">Logout</button>
+                <button class="btn btn-sm btn-uncheck" onclick="uncheckAll()" title="Uncheck semua task">
+                    <i class="ph ph-arrow-counter-clockwise"></i>
+                    <span class="btn-text">Uncheck All</span>
+                </button>
+                <button class="btn btn-sm btn-clear" onclick="clearCompleted()" title="Hapus task yang sudah selesai">
+                    <i class="ph ph-broom"></i>
+                    <span class="btn-text">Clear Done</span>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="resetList()" title="Reset semua ke awal">
+                    <i class="ph ph-trash-bold"></i>
+                    <span class="btn-text">Reset All</span>
+                </button>
+                <button class="btn btn-sm btn-logout" onclick="logout()" title="Keluar dari admin">
+                    <i class="ph ph-sign-out-bold"></i>
+                    <span class="btn-text">Logout</span>
+                </button>
             </div>
         </div>
 
@@ -492,6 +532,17 @@ async function clearCompleted() {
     }
     if (confirm(`Hapus ${completedCount} task yang sudah selesai?`)) {
         await apiRequest('clear_completed');
+    }
+}
+
+async function uncheckAll() {
+    const checkedCount = tasks.filter(t => t.is_completed).length;
+    if (checkedCount === 0) {
+        alert("Semua task sudah unchecked.");
+        return;
+    }
+    if (confirm(`Uncheck semua ${checkedCount} task yang sudah selesai?`)) {
+        await apiRequest('uncheck_all');
     }
 }
 
