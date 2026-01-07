@@ -298,7 +298,7 @@
 let tasks = [];
 let isAdmin = false;
 
-window.onload = () => {
+window.addEventListener('load', () => {
     setTimeout(() => {
         const loader = document.getElementById('loader');
         loader.style.opacity = '0';
@@ -311,7 +311,7 @@ window.onload = () => {
         new Date().toLocaleDateString('id-ID', options);
 
     fetchTasks();
-};
+});
 
 async function fetchTasks() {
     try {
