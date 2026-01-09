@@ -60,14 +60,15 @@ function getTasks() {
     if (!$tasksJson || $tasksJson === '') {
         // Initialize dengan data default
         $defaultTasks = [
-            ['id' => 1, 'task_name' => 'Selamat datang di Cheva\'s To Do List!', 'list_order' => 1, 'is_completed' => false],
-            ['id' => 2, 'task_name' => 'Login sebagai admin untuk mengedit list', 'list_order' => 2, 'is_completed' => false],
-            ['id' => 3, 'task_name' => 'Password: admin123', 'list_order' => 3, 'is_completed' => false]
+            ['id' => 1, 'task_name' => '', 'list_order' => 1, 'is_completed' => false],
+            ['id' => 2, 'task_name' => '', 'list_order' => 2, 'is_completed' => false],
+            ['id' => 3, 'task_name' => '', 'list_order' => 3, 'is_completed' => false]
         ];
         saveTasks($defaultTasks);
         return $defaultTasks;
     }
-    
+
+
     $tasks = json_decode($tasksJson, true);
     
     // Validasi tasks adalah array
