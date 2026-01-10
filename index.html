@@ -12,11 +12,10 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <style>
-        /* --- 1. CORE VARIABLES & RESET --- */
         :root {
             --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
             --accent-color: #8B5CF6;
-            --glass-bg: rgba(255, 255, 255, 0.75); /* Sedikit lebih transparan agar list menonjol */
+            --glass-bg: rgba(255, 255, 255, 0.85);
             --glass-border: rgba(255, 255, 255, 0.8);
             --glass-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
             --text-dark: #1e293b;
@@ -33,42 +32,44 @@
             min-height: 100vh;
             display: flex; justify-content: center; align-items: flex-start;
             overflow-x: hidden; position: relative;
-            padding-top: 60px; 
-            padding-bottom: 60px;
+            padding: 60px 0;
         }
 
-        /* --- 2. DEKORASI BACKGROUND --- */
+        /* --- BACKGROUND --- */
         .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.6; animation: floatBlob 10s infinite alternate; }
         .blob-1 { width: 400px; height: 400px; background: #c084fc; top: -100px; left: -100px; }
         .blob-2 { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; right: -50px; animation-delay: -5s; }
         @keyframes floatBlob { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
 
-        /* --- 3. CONTAINER UTAMA --- */
+        /* --- CONTAINER --- */
         .container {
-            width: 90%; 
-            max-width: 500px;
+            width: 90%; max-width: 500px;
             background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative; transition: 0.5s;
+            box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative;
         }
 
-        /* TEASER MODE (BLUR EFFECT) */
-        .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .empty-state { 
-            filter: blur(10px); pointer-events: none; user-select: none; opacity: 0.5;
+        .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .empty-state, .mode-teaser .progress-container { 
+            filter: blur(10px); pointer-events: none; opacity: 0.5;
         }
         
         .login-overlay {
-            position: absolute; inset: 0; z-index: 100;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; padding: 20px; border-radius: var(--radius-xl);
+            position: absolute; inset: 0; z-index: 100; display: none;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
         }
         .mode-teaser .login-overlay { display: flex; animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .login-overlay h2 { font-family: 'Outfit'; font-size: 1.6rem; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.4; }
 
-        /* HEADER */
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+        /* --- PROGRESS BAR --- */
+        .progress-container { margin-bottom: 2rem; }
+        .progress-info { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text-gray); }
+        .progress-track { width: 100%; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .progress-fill { 
+            width: 0%; height: 100%; background: var(--primary-gradient); 
+            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); 
+        }
+
+        /* --- HEADER --- */
+        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
         .brand-title { font-family: 'Outfit'; font-size: 2rem; font-weight: 800; line-height: 1.1; }
         .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
@@ -77,263 +78,144 @@
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s;
             color: var(--text-gray); display: flex; align-items: center; justify-content: center;
         }
-        .profile-btn:hover { transform: scale(1.05); }
-        .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(10deg); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); }
+        .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(10deg); }
 
-        /* --- ADMIN PANEL (EDIT MODE) --- */
+        /* --- ADMIN PANEL --- */
         .admin-controls {
             background: white; padding: 1rem; border-radius: var(--radius-md);
             margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 12px;
-            animation: slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
         }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .input-wrapper { display: flex; gap: 10px; width: 100%; align-items: center; }
-        
+        .input-wrapper { display: flex; gap: 10px; width: 100%; }
         input[type="text"], input[type="password"] {
-            flex: 1; min-width: 0;
-            padding: 14px 16px; border-radius: 12px;
-            border: 2px solid #e2e8f0; outline: none; background: #f8fafc;
+            flex: 1; padding: 14px 16px; border-radius: 12px; border: 2px solid #e2e8f0; outline: none;
             font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem;
         }
-        input:focus { border-color: var(--accent-color); background: white; }
-
         .btn-add { 
-            flex-shrink: 0; width: 50px; height: 50px; 
-            border-radius: 12px; border: none; background: var(--text-dark); color: white; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 20px;
+            width: 50px; height: 50px; flex-shrink: 0; border-radius: 12px; border: none; 
+            background: var(--text-dark); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
-        .btn-add:hover { background: black; }
 
         .admin-tools { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
         .btn-sm {
-            border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
-            font-size: 0.85rem; padding: 10px 14px; border-radius: 10px;
-            display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: 0.2s;
-        }
-        .btn-sm:active { transform: scale(0.95); }
-        .btn-uncheck { background: #eff6ff; color: #1d4ed8; }
-        .btn-clear { background: #fffbeb; color: #b45309; } 
-        .btn-reset { background: #fef2f2; color: #b91c1c; }
-        .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; margin-left: auto; }
-
-        .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 24px; font-size: 1rem;}
-        .btn-primary { background: var(--primary-gradient); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-
-        /* --- [REDESIGN] LIST ITEMS --- */
-        /* Menambahkan gap yang lebih besar agar terlihat terpisah */
-        ul { 
-            list-style: none; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 16px; 
-            padding-bottom: 20px;
+            border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+            font-size: 0.75rem; padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 6px;
         }
 
+        /* --- LIST ITEMS REDESIGN --- */
+        ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
         .todo-item {
-            /* Styling dasar Card */
-            background: rgba(255, 255, 255, 0.85); /* Lebih solid */
-            backdrop-filter: blur(10px);
-            border: 1px solid white;
-            padding: 18px 20px; /* Padding sedikit lebih besar */
-            border-radius: 18px; 
-            
-            /* Layout */
-            display: flex; 
-            align-items: center; 
-            gap: 16px;
-            position: relative;
-            
-            /* Visual Depth & Separation */
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02), 0 10px 15px -3px rgba(0,0,0,0.03);
-            border-left: 5px solid transparent; /* Persiapan untuk hover effect */
-            
-            /* Animation Transition */
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            animation: slideInUp 0.5s ease backwards;
+            background: white; padding: 16px; border-radius: 16px;
+            display: flex; align-items: center; gap: 14px;
+            transition: all 0.3s ease; border: 1px solid transparent;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
+        .todo-item:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
 
-        /* Staggering Animation (Efek muncul bergantian tanpa JS kompleks) */
-        .todo-item:nth-child(1) { animation-delay: 0.05s; }
-        .todo-item:nth-child(2) { animation-delay: 0.1s; }
-        .todo-item:nth-child(3) { animation-delay: 0.15s; }
-        .todo-item:nth-child(4) { animation-delay: 0.2s; }
-        .todo-item:nth-child(5) { animation-delay: 0.25s; }
-
-        /* Hover Effect: Lift Up & Glow */
-        .todo-item:hover {
-            transform: translateY(-4px) scale(1.01);
-            background: #ffffff;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-            border-left-color: var(--accent-color); /* Aksen warna muncul di kiri */
-        }
-
-        /* Completed State */
-        .todo-item.completed { 
-            opacity: 0.7; 
-            background: rgba(241, 245, 249, 0.6);
-            box-shadow: none;
-            transform: scale(0.98);
-            border: 1px solid transparent;
-        }
-        .todo-item.completed .task-text { 
-            text-decoration: line-through; 
-            color: #94a3b8; 
-            font-style: italic;
-        }
-
-        /* Keyframes untuk animasi masuk */
-        @keyframes slideInUp {
-            from { 
-                opacity: 0; 
-                transform: translateY(30px) scale(0.95); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0) scale(1); 
-            }
-        }
-        
-        /* Checkbox Custom */
+        /* --- MODERN CHECKBOX --- */
+        .cb-wrapper { position: relative; width: 26px; height: 26px; flex-shrink: 0; } /* Ukuran dikunci */
         .custom-checkbox {
-            appearance: none; width: 24px; height: 24px; flex-shrink: 0;
-            border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer;
-            display: grid; place-content: center; transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            background: #fff;
+            appearance: none; width: 26px; height: 26px; border: 2.5px solid #cbd5e1;
+            border-radius: 9px; cursor: pointer; transition: all 0.3s ease; background: white;
+            display: block;
         }
-        .custom-checkbox:hover { border-color: var(--accent-color); }
-        .custom-checkbox:checked { 
-            background: var(--accent-color); 
-            border-color: var(--accent-color); 
-            transform: scale(1.1);
+        .custom-checkbox:checked {
+            background: var(--accent-color); border-color: var(--accent-color);
+            animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .custom-checkbox:checked::after { content: '✔'; color: white; font-size: 14px; font-weight: bold; }
+        .custom-checkbox:checked::after {
+            content: '✔'; position: absolute; color: white; font-size: 14px;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800;
+        }
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
         .task-text { 
-            flex-grow: 1; font-weight: 600; font-size: 1.05rem; 
-            line-height: 1.5; word-break: break-word; color: var(--text-dark);
-            transition: color 0.3s;
+            flex: 1; font-weight: 600; font-size: 1rem; color: var(--text-dark); 
+            transition: all 0.3s ease; line-height: 1.4;
         }
+        .completed .task-text { color: #94a3b8; text-decoration: line-through; }
+        .completed { background: rgba(255,255,255,0.5); border-color: transparent; }
 
-        /* Action Icons (Muncul saat Edit Mode) */
-        .item-actions { display: none; gap: 6px; flex-shrink: 0; }
-        .edit-mode-active .item-actions { display: flex; animation: fadeIn 0.3s; }
-        
+        .item-actions { display: none; gap: 4px; }
+        .edit-mode-active .item-actions { display: flex; }
         .action-icon {
-            width: 32px; height: 32px; border-radius: 8px; 
+            width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: 0.2s; background: #f1f5f9; color: var(--text-gray);
         }
-        .action-icon:hover { background: var(--text-dark); color: white; transform: translateY(-2px); }
-        .icon-del { color: #ef4444; background: #fef2f2; }
-        .icon-del:hover { background: #ef4444; color: white; }
 
-        /* MODAL */
+        /* --- MODAL --- */
         .modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
+            display: none; justify-content: center; align-items: center; z-index: 1000;
         }
-        .modal-content { 
-            background: white; padding: 2rem; border-radius: 24px; width: 100%; max-width: 380px; 
-            text-align: center; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-        }
-        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        .pass-container { position: relative; margin: 20px 0; }
-        .pass-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); font-size: 20px; }
+        .modal-content { background: white; padding: 2rem; border-radius: 24px; width: 90%; max-width: 380px; text-align: center; }
 
-        .empty-state { text-align: center; padding: 3rem 0; color: var(--text-gray); display: none; }
+        .empty-state { text-align: center; padding: 2rem 0; display: none; }
 
-        /* --- MOBILE RESPONSIVE TWEAKS --- */
         @media (max-width: 480px) {
-            .container { padding: 1.5rem; width: 92%; }
-            .brand-title { font-size: 1.75rem; }
+            .container { padding: 1.5rem; }
             .btn-sm .btn-text { display: none; }
-            .btn-sm { padding: 12px; justify-content: center; }
-            .btn-sm i { font-size: 20px; }
-            .admin-tools { gap: 6px; justify-content: space-between; }
-            .btn-sm { flex: 1; }
-            input[type="text"] { font-size: 16px; }
-            
-            /* Penyesuaian padding item di mobile */
-            .todo-item { padding: 14px 16px; border-radius: 14px; gap: 12px; }
         }
     </style>
 </head>
-<body class="mode-teaser"> 
+<body class="mode-teaser">
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
 
     <div id="loginModal" class="modal">
         <div class="modal-content">
             <h2 style="font-family:'Outfit'">Admin Access</h2>
-            <p style="color:var(--text-gray); font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
-            
-            <div class="pass-container">
-                <input type="password" id="passwordInput" placeholder="Password..." onkeypress="if(event.key === 'Enter') attemptLogin()">
-                <i class="ph ph-eye" id="eyeIcon" onclick="togglePasswordVisibility()"></i>
-            </div>
-            
-            <div id="errorMsg" style="color:#ef4444; font-size: 0.85rem; margin-bottom: 15px; display: none;">
-                Password salah cepaa!
-            </div>
-            
-            <div style="display:flex; justify-content:center; gap:10px;">
-                <button onclick="closeModal()" class="btn" style="background:#f1f5f9; color:var(--text-gray)">Batal</button>
-                <button class="btn btn-primary" onclick="attemptLogin()" style="flex:1">Login</button>
+            <input type="password" id="passwordInput" placeholder="Password..." style="width:100%; margin: 15px 0;" onkeypress="if(event.key === 'Enter') attemptLogin()">
+            <div id="errorMsg" style="color:#ef4444; font-size: 0.85rem; margin-bottom: 10px; display: none;">Password salah!</div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="closeModal()" class="btn" style="flex:1; padding:12px; border-radius:12px; border:none; background:#f1f5f9;">Batal</button>
+                <button onclick="attemptLogin()" class="btn-add" style="flex:1; width:auto; font-weight:bold;">Login</button>
             </div>
         </div>
     </div>
 
     <div class="container" id="mainContainer">
-        
         <div class="login-overlay">
             <i class="ph-duotone ph-lock-key" style="font-size: 64px; color: var(--accent-color); margin-bottom: 15px;"></i>
-            <h2>yakin kamu cepa? <br> coba login sekarang!</h2>
-            <button class="btn btn-primary" onclick="openLogin()">
-                Login Sekarang
-            </button>
+            <h2 style="font-family:'Outfit'">Yakin kamu Cheva?</h2>
+            <button class="btn-add" style="width:auto; padding:0 25px; margin-top:15px; background:var(--primary-gradient)" onclick="openLogin()">Login Sekarang</button>
         </div>
 
         <header>
             <div>
                 <div class="brand-title"><span class="brand-highlight">Cheva's</span> <br> To Do List</div>
-                <div id="dateDisplay" style="color:var(--text-gray); font-size: 0.9rem; margin-top: 5px; font-weight: 600;"></div>
+                <div id="dateDisplay" style="color:var(--text-gray); font-size: 0.85rem; margin-top: 5px; font-weight: 700;"></div>
             </div>
-            <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()" title="Toggle Edit Mode">
+            <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()">
                 <i class="ph ph-user-focus" style="font-size: 24px;"></i>
             </button>
         </header>
 
+        <div class="progress-container">
+            <div class="progress-info">
+                <span>Task Progress</span>
+                <span id="progressText">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
         <div class="admin-controls" id="adminPanel">
             <div class="input-wrapper">
-                <input type="text" id="newTaskInput" placeholder="Tulis tugas baru..." autocomplete="off" onkeypress="if(event.key === 'Enter') addTask()">
+                <input type="text" id="newTaskInput" placeholder="Tulis tugas baru..." onkeypress="if(event.key === 'Enter') addTask()">
                 <button class="btn-add" onclick="addTask()"><i class="ph-bold ph-plus"></i></button>
             </div>
-            
             <div class="admin-tools">
-                <button class="btn-sm btn-uncheck" onclick="apiCall('uncheck_all')" title="Uncheck All">
-                    <i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="btn-text">Uncheck All</span>
-                </button>
-                <button class="btn-sm btn-clear" onclick="apiCall('clear_completed')" title="Clear Done">
-                    <i class="ph-bold ph-broom"></i> <span class="btn-text">Clear Done</span>
-                </button>
-                <button class="btn-sm btn-reset" onclick="if(confirm('Reset semua list ke awal?')) apiCall('reset')" title="Reset All">
-                    <i class="ph-bold ph-trash"></i> <span class="btn-text">Reset All</span>
-                </button>
-                <button class="btn-sm btn-logout" onclick="logout()" title="Logout">
-                    <i class="ph-bold ph-sign-out"></i> <span class="btn-text">Logout</span>
-                </button>
+                <button class="btn-sm" style="background:#eff6ff; color:#1d4ed8;" onclick="apiCall('uncheck_all')"><i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="btn-text">Uncheck All</span></button>
+                <button class="btn-sm" style="background:#fef2f2; color:#b91c1c;" onclick="logout()">Logout</button>
             </div>
         </div>
 
         <ul id="todoList"></ul>
-
         <div class="empty-state" id="emptyState">
-            <i class="ph ph-confetti" style="font-size: 48px; margin-bottom: 10px; color:#cbd5e1"></i>
-            <p>Semua tugas selesai! Keren!</p>
+            <i class="ph ph-leaf" style="font-size: 40px; color:#cbd5e1"></i>
+            <p style="color:var(--text-gray); margin-top:10px;">Kosong & rapi!</p>
         </div>
     </div>
 
@@ -347,44 +229,33 @@
                 const res = await fetch('/api/api.php?action=get_all');
                 const json = await res.json();
                 tasks = json.data || [];
-                
-                // Cek status login
-                if (json.status !== 'locked') {
-                    isLoggedIn = true;
-                    document.body.classList.remove('mode-teaser');
-                } else {
-                    isLoggedIn = false;
-                    document.body.classList.add('mode-teaser');
-                }
+                isLoggedIn = json.status !== 'locked';
+                document.body.classList.toggle('mode-teaser', !isLoggedIn);
                 render();
-            } catch (e) {
-                console.error("Gagal memuat data:", e);
+            } catch (e) { console.error(e); }
+        }
+
+        function updateProgress() {
+            if (tasks.length === 0) {
+                document.getElementById('progressFill').style.width = '0%';
+                document.getElementById('progressText').innerText = '0%';
+                return;
             }
+            const completed = tasks.filter(t => t.is_completed).length;
+            const percent = Math.round((completed / tasks.length) * 100);
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').innerText = percent + '%';
         }
 
         function render() {
             const listEl = document.getElementById('todoList');
-            const adminPanel = document.getElementById('adminPanel');
-            const profileBtn = document.getElementById('profileBtn');
-            const container = document.getElementById('mainContainer');
             const emptyState = document.getElementById('emptyState');
-
-            // Tanggal
-            const options = { weekday: 'long', day: 'numeric', month: 'long' };
-            document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
-
-            // Logika UI
-            profileBtn.classList.toggle('active', isEditMode);
             
-            if (isLoggedIn && isEditMode) {
-                adminPanel.style.display = 'flex';
-                container.classList.add('edit-mode-active');
-            } else {
-                adminPanel.style.display = 'none';
-                container.classList.remove('edit-mode-active');
-            }
+            document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+            document.getElementById('adminPanel').style.display = (isLoggedIn && isEditMode) ? 'flex' : 'none';
+            document.getElementById('profileBtn').classList.toggle('active', isEditMode);
+            document.getElementById('mainContainer').classList.toggle('edit-mode-active', isEditMode);
 
-            // Render Items
             listEl.innerHTML = '';
             if (tasks.length === 0) {
                 emptyState.style.display = 'block';
@@ -393,88 +264,51 @@
                 tasks.forEach((t, i) => {
                     const li = document.createElement('li');
                     li.className = `todo-item ${t.is_completed ? 'completed' : ''}`;
-                    // Menambahkan delay animasi via inline style jika item banyak
-                    // agar tetap staggered meskipun lebih dari 5 item
-                    if(i > 4) {
-                        li.style.animationDelay = `${i * 0.05}s`;
-                    }
-                    
                     li.innerHTML = `
-                        <input type="checkbox" class="custom-checkbox" 
-                            ${t.is_completed ? 'checked' : ''} 
-                            onchange="apiCall('toggle', {id:${t.id}})">
-                        
+                        <div class="cb-wrapper">
+                            <input type="checkbox" class="custom-checkbox" ${t.is_completed ? 'checked' : ''} 
+                                onchange="toggleTaskInstant(${t.id}, this)">
+                        </div>
                         <span class="task-text">${t.task_name}</span>
-                        
                         <div class="item-actions">
                             <div class="action-icon" onclick="move(${i}, -1)"><i class="ph-bold ph-caret-up"></i></div>
                             <div class="action-icon" onclick="move(${i}, 1)"><i class="ph-bold ph-caret-down"></i></div>
-                            <div class="action-icon icon-del" onclick="deleteTask(${t.id})"><i class="ph-bold ph-trash"></i></div>
+                            <div class="action-icon" style="color:#ef4444" onclick="deleteTask(${t.id})"><i class="ph-bold ph-trash"></i></div>
                         </div>
                     `;
                     listEl.appendChild(li);
                 });
             }
+            updateProgress();
         }
 
-        function openLogin() { 
-            document.getElementById('loginModal').style.display = 'flex'; 
-            setTimeout(() => document.getElementById('passwordInput').focus(), 100);
-        }
-        
-        function closeModal() { 
-            document.getElementById('loginModal').style.display = 'none'; 
-            document.getElementById('errorMsg').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-        }
+        // --- OPTIMISTIC UI (NO REFRESH) ---
+        async function toggleTaskInstant(id, el) {
+            const isChecked = el.checked;
+            const item = el.closest('.todo-item');
+            
+            // Ubah tampilan secara instan
+            item.classList.toggle('completed', isChecked);
+            const taskIndex = tasks.findIndex(t => t.id == id);
+            if(taskIndex !== -1) tasks[taskIndex].is_completed = isChecked;
+            updateProgress();
 
-        function togglePasswordVisibility() {
-            const inp = document.getElementById('passwordInput');
-            const ico = document.getElementById('eyeIcon');
-            if(inp.type === 'password') {
-                inp.type = 'text'; ico.className = 'ph ph-eye-slash';
-            } else {
-                inp.type = 'password'; ico.className = 'ph ph-eye';
-            }
-        }
-
-        async function attemptLogin() {
-            const pass = document.getElementById('passwordInput').value;
-            if(!pass) return;
-
+            // Kirim ke server di background
             try {
-                const res = await fetch('/api/api.php?action=login', {
+                await fetch(`/api/api.php?action=toggle`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ password: pass })
+                    body: JSON.stringify({id})
                 });
-                const json = await res.json();
-                
-                if(json.status === 'success') {
-                    closeModal();
-                    isLoggedIn = true;
-                    document.body.classList.remove('mode-teaser');
-                    isEditMode = false; 
-                    init();
-                } else {
-                    document.getElementById('errorMsg').style.display = 'block';
-                }
-            } catch (e) {
-                console.error("Login Error", e);
-            }
-        }
-
-        function toggleEditMode() {
-            if(!isLoggedIn) {
-                openLogin();
-            } else {
-                isEditMode = !isEditMode;
-                render();
+            } catch (e) { 
+                // Jika gagal, kembalikan tampilan
+                el.checked = !isChecked;
+                item.classList.toggle('completed', !isChecked);
+                init(); 
             }
         }
 
         async function apiCall(action, data = {}) {
-            // Optimistic Update untuk UX yang cepat (opsional), tapi agar aman kita reload setelah fetch
             await fetch(`/api/api.php?action=${action}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -485,31 +319,37 @@
 
         function addTask() {
             const input = document.getElementById('newTaskInput');
-            const val = input.value.trim();
-            if(val) { 
-                apiCall('add', {task: val}); 
-                input.value = ''; 
-            }
+            if(input.value.trim()) { apiCall('add', {task: input.value.trim()}); input.value = ''; }
         }
 
-        function deleteTask(id) {
-            if(confirm("Yakin hapus?")) apiCall('delete', {id});
-        }
+        function deleteTask(id) { if(confirm("Hapus tugas?")) apiCall('delete', {id}); }
 
         function move(idx, dir) {
-            const t1 = tasks[idx];
-            const t2 = tasks[idx+dir];
-            if(t2) {
-                apiCall('swap', {
-                    id1: t1.id, order1: t1.list_order, 
-                    id2: t2.id, order2: t2.list_order
-                });
-            }
+            const t1 = tasks[idx], t2 = tasks[idx+dir];
+            if(t2) apiCall('swap', {id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order});
         }
 
-        function logout() {
-            fetch('/api/api.php?action=logout').then(() => location.reload());
+        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
+
+        async function attemptLogin() {
+            const pass = document.getElementById('passwordInput').value;
+            const res = await fetch('/api/api.php?action=login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ password: pass })
+            });
+            const json = await res.json();
+            if(json.status === 'success') { closeModal(); init(); }
+            else { document.getElementById('errorMsg').style.display = 'block'; }
         }
+
+        function toggleEditMode() { 
+            if(!isLoggedIn) openLogin(); 
+            else { isEditMode = !isEditMode; render(); }
+        }
+
+        function logout() { fetch('/api/api.php?action=logout').then(() => location.reload()); }
 
         init();
     </script>
