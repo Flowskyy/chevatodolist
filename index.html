@@ -4,292 +4,192 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cheva's To Do List</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
     <style>
-        /* CSS tetap sama seperti kode anda sebelumnya */
         :root {
             --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
             --accent-color: #8B5CF6;
-            --glass-bg: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.6);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --glass-bg: rgba(255, 255, 255, 0.8);
             --text-dark: #1e293b;
             --text-gray: #64748b;
-            --radius-xl: 24px;
-            --radius-md: 16px;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f3f4f6;
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow-x: hidden;
-            position: relative;
+            background: #f3f4f6; color: var(--text-dark);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
         }
-
-        .bg-blob {
-            position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.6; animation: floatBlob 10s infinite alternate;
-        }
-        .blob-1 { width: 400px; height: 400px; background: #c084fc; top: -100px; left: -100px; }
-        .blob-2 { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; right: -50px; animation-delay: -5s; }
-        .blob-3 { width: 200px; height: 200px; background: #f472b6; top: 40%; left: 30%; }
-
-        @keyframes floatBlob { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
-
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 9999; transition: opacity 0.6s ease;
-        }
-        .spinner { width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top: 4px solid var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        /* Background Blobs */
+        .blob { position: fixed; border-radius: 50%; filter: blur(60px); z-index: -1; opacity: 0.5; }
+        .b1 { width: 300px; height: 300px; background: #c084fc; top: -50px; left: -50px; }
+        .b2 { width: 250px; height: 250px; background: #60a5fa; bottom: -50px; right: -50px; }
 
         .container {
-            width: 90%; max-width: 550px; background: var(--glass-bg); backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative; margin: 40px 0;
+            width: 90%; max-width: 500px; background: var(--glass-bg); backdrop-filter: blur(15px);
+            border-radius: 24px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .brand { font-family: 'Outfit'; font-size: 1.8rem; font-weight: 800; line-height: 1; }
+        .highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
-        .brand-title { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1.1; }
-        .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .date-badge { display: inline-block; margin-top: 8px; padding: 6px 12px; background: rgba(255,255,255,0.6); border-radius: 20px; font-size: 0.85rem; color: var(--text-gray); border: 1px solid white; }
+        .profile-btn { 
+            width: 45px; height: 45px; border-radius: 12px; border: none; cursor: pointer; 
+            background: white; color: var(--text-gray); transition: 0.3s;
+        }
+        .profile-btn.active { background: var(--primary-gradient); color: white; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
 
-        .profile-btn { background: white; border: none; width: 48px; height: 48px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
-        .profile-btn.active { background: var(--primary-gradient); color: white; }
+        /* Login Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal-card { background: white; padding: 2rem; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; }
+        .pass-container { position: relative; margin: 1.5rem 0; }
+        .pass-container input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; outline: none; }
+        .toggle-pass { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); }
 
-        .admin-controls { background: white; padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 12px; }
-        
-        .input-wrapper { display: flex; gap: 10px; }
-        input[type="text"], input[type="password"] { flex-grow: 1; padding: 14px 16px; border-radius: 12px; border: 2px solid #e2e8f0; outline: none; background: #f8fafc; width: 100%; }
-        
-        .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .btn-add { background: var(--text-dark); color: white; }
+        /* Admin Panel */
+        .admin-panel { background: white; padding: 1rem; border-radius: 15px; margin-bottom: 1.5rem; display: none; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .input-group { display: flex; gap: 8px; margin-bottom: 10px; }
+        .input-group input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .btn-add { background: var(--text-dark); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
+        .tools { display: flex; gap: 5px; flex-wrap: wrap; }
+        .btn-tool { font-size: 0.75rem; padding: 6px 10px; border: none; border-radius: 5px; cursor: pointer; }
 
-        .admin-tools { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
-        .btn-sm { font-size: 0.8rem; padding: 8px 12px; border-radius: 8px; }
-        .btn-uncheck { background: #dbeafe; color: #1e40af; }
-        .btn-clear { background: #fef3c7; color: #92400e; }
-        .btn-danger { background: #fee2e2; color: #ef4444; }
-        .btn-logout { background: #f1f5f9; color: var(--text-gray); }
+        /* List */
+        ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        .todo-item { background: white; padding: 12px 15px; border-radius: 12px; display: flex; align-items: center; transition: 0.2s; }
+        .todo-item.completed { opacity: 0.6; background: #f9fafb; }
+        .todo-item.completed .task-text { text-decoration: line-through; color: #94a3b8; }
+        .task-text { flex: 1; margin: 0 10px; font-weight: 500; }
+        .item-actions { display: none; gap: 5px; } /* Muncul di Edit Mode */
+        .edit-mode .item-actions { display: flex; }
+        .action-btn { cursor: pointer; color: var(--text-gray); }
 
-        ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-        .todo-item { background: rgba(255, 255, 255, 0.6); border: 1px solid white; padding: 16px; border-radius: 16px; display: flex; align-items: center; transition: 0.3s; }
-        .todo-item.completed { opacity: 0.6; background: rgba(255,255,255,0.4); }
-        .completed .task-text { text-decoration: line-through; color: #94a3b8; }
-
-        .checkbox-wrapper { margin-right: 16px; }
-        .custom-checkbox { appearance: none; width: 26px; height: 26px; border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer; position: relative; }
-        .custom-checkbox:checked { background: var(--accent-color); border-color: var(--accent-color); }
-        .custom-checkbox:checked::after { content: '\2713'; color: white; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
-
-        .task-text { flex-grow: 1; font-weight: 500; }
-        .item-actions { display: flex; gap: 6px; opacity: 0; transition: 0.2s; }
-        .todo-item:hover .item-actions { opacity: 1; }
-        .action-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; background: rgba(0,0,0,0.03); }
-
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 10000; }
-        .modal-content { background: white; padding: 2.5rem; border-radius: 24px; width: 90%; max-width: 400px; text-align: center; }
-        .error-msg { background: #fee2e2; color: #dc2626; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-top: 10px; display: none; }
-        .empty-state { text-align: center; padding: 4rem 0; color: var(--text-gray); display: none; }
+        .btn-login { background: var(--primary-gradient); color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <div class="bg-blob blob-1"></div>
-    <div class="bg-blob blob-2"></div>
-    <div class="bg-blob blob-3"></div>
-
-    <div id="loader">
-        <div class="spinner"></div>
-        <div class="loader-text" style="font-family:'Outfit'; margin-top:10px;">Cheva's List</div>
-    </div>
+    <div class="blob b1"></div><div class="blob b2"></div>
 
     <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <h2 style="margin-bottom: 1rem; font-family:'Outfit';">Restricted Access</h2>
-            <p style="color:#64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">Masukkan password untuk melihat daftar tugas.</p>
-            <div style="position: relative;">
-                <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key === 'Enter') attemptLogin()">
+        <div class="modal-card">
+            <h2 style="font-family:'Outfit'">Private Access</h2>
+            <div class="pass-container">
+                <input type="password" id="passInput" placeholder="Masukkan password...">
+                <i class="ph ph-eye toggle-pass" id="eyeIcon" onclick="togglePasswordVisibility()"></i>
             </div>
-            <div class="error-msg" id="errorMsg"></div>
-            <div style="display:flex; justify-content:center; gap:10px; margin-top: 15px;">
-                <button class="btn" style="background:var(--primary-gradient); color:white; width:100%" onclick="attemptLogin()">Buka List</button>
-            </div>
+            <p id="errorMsg" style="color:red; font-size:0.8rem; margin-bottom:10px; display:none;">Password salah!</p>
+            <button class="btn-login" onclick="login()">Buka List</button>
         </div>
     </div>
 
     <div class="container">
         <header>
-            <div>
-                <div class="brand-title"><span class="brand-highlight">Cheva's</span> <br> To Do List</div>
-                <div class="date-badge" id="dateDisplay">Loading date...</div>
-            </div>
-            <button class="profile-btn" id="profileBtn" onclick="handleProfileClick()">
-                <i class="ph ph-user" style="font-size: 24px;"></i>
+            <div class="brand"><span class="highlight">Cheva's</span><br>To Do List</div>
+            <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()">
+                <i class="ph ph-user-gear" style="font-size: 24px;"></i>
             </button>
         </header>
 
-        <div class="admin-controls" id="adminPanel">
-            <div class="input-wrapper">
-                <input type="text" id="newTaskInput" placeholder="Tambah tugas baru..." onkeypress="if(event.key === 'Enter') addTask()">
-                <button class="btn btn-add" onclick="addTask()"><i class="ph-bold ph-plus"></i></button>
+        <div class="admin-panel" id="adminPanel">
+            <div class="input-group">
+                <input type="text" id="taskInput" placeholder="Tugas baru...">
+                <button class="btn-add" onclick="addTask()">Tambah</button>
             </div>
-            <div class="admin-tools">
-                <button class="btn btn-sm btn-uncheck" onclick="uncheckAll()"><i class="ph ph-arrow-counter-clockwise"></i> Uncheck</button>
-                <button class="btn btn-sm btn-clear" onclick="clearCompleted()"><i class="ph ph-broom"></i> Clear</button>
-                <button class="btn btn-sm btn-danger" onclick="resetList()"><i class="ph ph-trash"></i> Reset</button>
-                <button class="btn btn-sm btn-logout" onclick="logout()"><i class="ph ph-sign-out"></i> Logout</button>
+            <div class="tools">
+                <button class="btn-tool" style="background:#dbeafe" onclick="api('uncheck_all')">Uncheck All</button>
+                <button class="btn-tool" style="background:#fef3c7" onclick="api('clear_completed')">Clear Done</button>
+                <button class="btn-tool" style="background:#fee2e2" onclick="api('reset')">Reset</button>
+                <button class="btn-tool" style="background:#f1f5f9" onclick="logout()">Logout</button>
             </div>
         </div>
 
         <ul id="todoList"></ul>
-
-        <div class="empty-state" id="emptyState">
-            <i class="ph ph-sparkle" style="font-size:48px; display:block; margin-bottom:10px;"></i>
-            <h3>List Kosong</h3>
-        </div>
     </div>
 
-<script>
-let tasks = [];
-let isAdmin = false;
-let loggedIn = false;
+    <script>
+        let tasks = [];
+        let isEditMode = false;
 
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        document.getElementById('loader').style.opacity = '0';
-        setTimeout(() => document.getElementById('loader').style.display = 'none', 600);
-    }, 800);
-
-    const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
-
-    fetchTasks();
-});
-
-async function fetchTasks() {
-    try {
-        const res = await fetch('/api/api.php?action=get_all', { credentials: 'include' });
-        const json = await res.json();
-        
-        if (json.status === 'success') {
-            tasks = json.data;
-            isAdmin = json.isAdmin;
-            loggedIn = true;
-            document.getElementById('loginModal').style.display = 'none';
-        } else if (json.status === 'locked') {
-            loggedIn = false;
-            tasks = [];
-            document.getElementById('loginModal').style.display = 'flex';
+        async function init() {
+            const res = await fetch('/api/api.php?action=get_all');
+            const json = await res.json();
+            if (json.status === 'success') {
+                tasks = json.data;
+                render();
+            } else {
+                document.getElementById('loginModal').style.display = 'flex';
+            }
         }
-        updateUI();
-    } catch (e) {
-        console.error("Fetch error", e);
-    }
-}
 
-function updateUI() {
-    const listEl = document.getElementById('todoList');
-    const adminPanel = document.getElementById('adminPanel');
-    const profileBtn = document.getElementById('profileBtn');
-    const emptyState = document.getElementById('emptyState');
+        function togglePasswordVisibility() {
+            const input = document.getElementById('passInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'ph ph-eye-closed toggle-pass';
+            } else {
+                input.type = 'password';
+                icon.className = 'ph ph-eye toggle-pass';
+            }
+        }
 
-    listEl.innerHTML = '';
+        async function login() {
+            const pass = document.getElementById('passInput').value;
+            const res = await fetch('/api/api.php?action=login', {
+                method: 'POST',
+                body: JSON.stringify({ password: pass })
+            });
+            const json = await res.json();
+            if (json.status === 'success') location.reload();
+            else document.getElementById('errorMsg').style.display = 'block';
+        }
 
-    if (!loggedIn) {
-        adminPanel.style.display = 'none';
-        profileBtn.classList.remove('active');
-        emptyState.style.display = 'none';
-        return;
-    }
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            document.getElementById('adminPanel').style.display = isEditMode ? 'block' : 'none';
+            document.getElementById('profileBtn').classList.toggle('active', isEditMode);
+            render();
+        }
 
-    adminPanel.style.display = 'flex';
-    profileBtn.classList.add('active');
+        async function api(action, data = {}) {
+            await fetch(`/api/api.php?action=${action}`, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            init();
+        }
 
-    if (tasks.length === 0) {
-        emptyState.style.display = 'block';
-    } else {
-        emptyState.style.display = 'none';
-        tasks.forEach((task, index) => {
-            const li = document.createElement('li');
-            const isDone = task.is_completed;
-            li.className = `todo-item ${isDone ? 'completed' : ''}`;
-            
-            li.innerHTML = `
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" class="custom-checkbox" ${isDone ? 'checked' : ''} onchange="toggleTask(${task.id})">
-                </div>
-                <span class="task-text">${task.task_name}</span>
-                <div class="item-actions">
-                    <div class="action-icon" onclick="moveTask(${index}, -1)"><i class="ph-bold ph-caret-up"></i></div>
-                    <div class="action-icon" onclick="moveTask(${index}, 1)"><i class="ph-bold ph-caret-down"></i></div>
-                    <div class="action-icon" style="color:red" onclick="deleteTask(${task.id})"><i class="ph-bold ph-trash"></i></div>
-                </div>
-            `;
-            listEl.appendChild(li);
-        });
-    }
-}
+        function render() {
+            const list = document.getElementById('todoList');
+            list.className = isEditMode ? 'edit-mode' : '';
+            list.innerHTML = tasks.map((t, i) => `
+                <li class="todo-item ${t.is_completed ? 'completed' : ''}">
+                    <input type="checkbox" ${t.is_completed ? 'checked' : ''} onchange="api('toggle', {id:${t.id}})">
+                    <span class="task-text">${t.task_name}</span>
+                    <div class="item-actions">
+                        <i class="ph ph-arrow-up action-btn" onclick="move(${i}, -1)"></i>
+                        <i class="ph ph-arrow-down action-btn" onclick="move(${i}, 1)"></i>
+                        <i class="ph ph-trash action-btn" style="color:red" onclick="api('delete', {id:${t.id}})"></i>
+                    </div>
+                </li>
+            `).join('');
+        }
 
-async function attemptLogin() {
-    const pass = document.getElementById('passwordInput').value;
-    const res = await fetch('/api/api.php?action=login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pass }),
-        credentials: 'include'
-    });
-    const json = await res.json();
-    if (json.status === 'success') {
-        document.getElementById('errorMsg').style.display = 'none';
-        fetchTasks();
-    } else {
-        const errorEl = document.getElementById('errorMsg');
-        errorEl.textContent = "Password salah!";
-        errorEl.style.display = 'block';
-    }
-}
+        function move(idx, dir) {
+            if (idx + dir < 0 || idx + dir >= tasks.length) return;
+            const t1 = tasks[idx], t2 = tasks[idx + dir];
+            api('swap', { id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order });
+        }
 
-async function apiRequest(action, data = {}) {
-    await fetch(`/api/api.php?action=${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        credentials: 'include'
-    });
-    fetchTasks();
-}
+        function addTask() {
+            const val = document.getElementById('taskInput').value;
+            if (val) { api('add', { task: val }); document.getElementById('taskInput').value = ''; }
+        }
 
-function addTask() { 
-    const val = document.getElementById('newTaskInput').value; 
-    if(val) { apiRequest('add', {task: val}); document.getElementById('newTaskInput').value = ''; }
-}
-function toggleTask(id) { apiRequest('toggle', {id}); }
-function deleteTask(id) { if(confirm("Hapus?")) apiRequest('delete', {id}); }
-function resetList() { if(confirm("Reset semua?")) apiRequest('reset'); }
-function clearCompleted() { apiRequest('clear_completed'); }
-function uncheckAll() { apiRequest('uncheck_all'); }
-function logout() { fetch('/api/api.php?action=logout', {credentials:'include'}).then(() => location.reload()); }
-function handleProfileClick() { if(!loggedIn) document.getElementById('loginModal').style.display = 'flex'; }
+        function logout() { fetch('/api/api.php?action=logout').then(() => location.reload()); }
 
-async function moveTask(index, dir) {
-    if ((dir === -1 && index === 0) || (dir === 1 && index === tasks.length - 1)) return;
-    const t1 = tasks[index]; const t2 = tasks[index + dir];
-    await apiRequest('swap', { id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order });
-}
-</script>
+        init();
+    </script>
 </body>
 </html>
