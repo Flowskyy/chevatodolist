@@ -10,57 +10,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     
     <style>
         /* --- 1. CORE VARIABLES & RESET --- */
         :root {
             --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
             --accent-color: #8B5CF6;
-            
-            /* Light Mode Default */
-            --bg-body: #f3f4f6;
-            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-bg: rgba(255, 255, 255, 0.75);
             --glass-border: rgba(255, 255, 255, 0.8);
             --glass-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
             --text-dark: #1e293b;
             --text-gray: #64748b;
-            --card-bg: rgba(255, 255, 255, 0.85);
-            --card-hover: #ffffff;
-            --input-bg: #f8fafc;
-            --checkbox-border: #cbd5e1;
-            
             --radius-xl: 24px;
             --radius-md: 16px;
         }
-
-        /* DARK MODE VARIABLES */
-        body.dark-mode {
-            --bg-body: #0f172a;
-            --glass-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
-            --text-dark: #f1f5f9;
-            --text-gray: #94a3b8;
-            --card-bg: rgba(51, 65, 85, 0.6);
-            --card-hover: rgba(51, 65, 85, 0.9);
-            --input-bg: #1e293b;
-            --checkbox-border: #475569;
-        }
-
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-body);
+            background-color: #f3f4f6;
             color: var(--text-dark);
             min-height: 100vh;
             display: flex; justify-content: center; align-items: flex-start;
             overflow-x: hidden; position: relative;
             padding-top: 60px; 
             padding-bottom: 60px;
-            transition: background-color 0.3s ease;
         }
 
         /* --- 2. DEKORASI BACKGROUND --- */
@@ -79,7 +53,7 @@
         }
 
         /* TEASER MODE (BLUR EFFECT) */
-        .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .empty-state, .mode-teaser .progress-container { 
+        .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .empty-state { 
             filter: blur(10px); pointer-events: none; user-select: none; opacity: 0.5;
         }
         
@@ -94,194 +68,111 @@
         .login-overlay h2 { font-family: 'Outfit'; font-size: 1.6rem; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.4; }
 
         /* HEADER */
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
         .brand-title { font-family: 'Outfit'; font-size: 2rem; font-weight: 800; line-height: 1.1; }
         .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .header-actions { display: flex; gap: 10px; }
-
-        .icon-btn {
-            background: var(--card-bg); border: 1px solid var(--glass-border); width: 42px; height: 42px; border-radius: 12px;
+        .profile-btn {
+            background: white; border: none; width: 48px; height: 48px; border-radius: 14px;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s;
             color: var(--text-gray); display: flex; align-items: center; justify-content: center;
         }
-        .icon-btn:hover { transform: scale(1.05); background: var(--card-hover); color: var(--text-dark); }
-        .icon-btn.active { background: var(--primary-gradient); color: white; border-color: transparent; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); }
-
-        /* PROGRESS BAR */
-        .progress-container { margin-bottom: 2rem; }
-        .progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--text-gray); margin-bottom: 8px; }
-        .progress-bg { width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden; }
-        .body.dark-mode .progress-bg { background: rgba(255,255,255,0.1); }
-        .progress-fill { height: 100%; background: var(--primary-gradient); width: 0%; transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 10px; }
+        .profile-btn:hover { transform: scale(1.05); }
+        .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(10deg); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); }
 
         /* --- ADMIN PANEL (EDIT MODE) --- */
         .admin-controls {
-            background: var(--card-bg); padding: 1.25rem; border-radius: var(--radius-md);
+            background: white; padding: 1rem; border-radius: var(--radius-md);
             margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 12px;
-            animation: slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid var(--glass-border);
+            animation: slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid rgba(0,0,0,0.05);
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .input-row { display: flex; gap: 10px; width: 100%; align-items: center; }
+        .input-wrapper { display: flex; gap: 10px; width: 100%; align-items: center; }
         
-        /* Category Selectors */
-        .category-options { display: flex; gap: 10px; margin-top: 5px; }
-        .cat-radio { display: none; }
-        .cat-label {
-            width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; opacity: 0.6; transition: 0.2s;
-        }
-        .cat-label:hover { opacity: 1; transform: scale(1.1); }
-        .cat-radio:checked + .cat-label { border-color: var(--text-dark); opacity: 1; transform: scale(1.2); }
-        
-        /* Colors */
-        .bg-color-1 { background: #ef4444; } /* Red */
-        .bg-color-2 { background: #3b82f6; } /* Blue */
-        .bg-color-3 { background: #10b981; } /* Green */
-        .bg-color-0 { background: #d1d5db; } /* Default */
-
         input[type="text"], input[type="password"] {
             flex: 1; min-width: 0;
             padding: 14px 16px; border-radius: 12px;
-            border: 2px solid var(--glass-border); outline: none; background: var(--input-bg);
-            font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; color: var(--text-dark);
+            border: 2px solid #e2e8f0; outline: none; background: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem;
         }
-        input:focus { border-color: var(--accent-color); background: var(--card-bg); }
+        input:focus { border-color: var(--accent-color); background: white; }
 
         .btn-add { 
             flex-shrink: 0; width: 50px; height: 50px; 
-            border-radius: 12px; border: none; background: var(--text-dark); color: var(--bg-body); cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.2s;
+            border-radius: 12px; border: none; background: var(--text-dark); color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
         }
-        .btn-add:hover { transform: scale(1.05); }
+        .btn-add:hover { background: black; }
 
-        .admin-tools { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 5px; }
+        .admin-tools { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
         .btn-sm {
             border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
-            font-size: 0.8rem; padding: 8px 12px; border-radius: 8px;
+            font-size: 0.85rem; padding: 10px 14px; border-radius: 10px;
             display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: 0.2s;
         }
         .btn-sm:active { transform: scale(0.95); }
-        .btn-uncheck { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-        .btn-clear { background: rgba(245, 158, 11, 0.1); color: #f59e0b; } 
-        .btn-reset { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-        .btn-logout { background: var(--input-bg); color: var(--text-gray); border: 1px solid var(--glass-border); margin-left: auto; }
+        .btn-uncheck { background: #eff6ff; color: #1d4ed8; }
+        .btn-clear { background: #fffbeb; color: #b45309; } 
+        .btn-reset { background: #fef2f2; color: #b91c1c; }
+        .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; margin-left: auto; }
 
         .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 24px; font-size: 1rem;}
         .btn-primary { background: var(--primary-gradient); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
 
-        /* --- [REDESIGN] LIST ITEMS --- */
-        ul { 
-            list-style: none; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            padding-bottom: 20px;
-            min-height: 50px; /* Area for SortableJS */
-        }
+        /* --- LIST ITEMS --- */
+        ul { list-style: none; display: flex; flex-direction: column; gap: 16px; padding-bottom: 20px; }
 
         .todo-item {
-            background: var(--card-bg);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            padding: 16px;
+            border: 1px solid white;
+            padding: 18px 20px;
             border-radius: 18px; 
-            display: flex; 
-            align-items: center; 
-            gap: 16px;
+            display: flex; align-items: center; gap: 16px;
             position: relative;
             box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            animation: slideInUp 0.4s ease backwards;
-            user-select: none; /* Penting untuk drag & drop */
-        }
-
-        /* Tagging Visual (Garis kiri warna) */
-        .todo-item::before {
-            content: ''; position: absolute; left: 0; top: 16px; bottom: 16px; width: 4px;
-            border-top-right-radius: 4px; border-bottom-right-radius: 4px;
-            background: var(--tag-color, transparent);
-            transition: 0.3s;
+            border-left: 5px solid transparent;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: slideInUp 0.5s ease backwards;
         }
 
         .todo-item:hover {
-            transform: translateY(-2px);
-            background: var(--card-hover);
-            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05);
+            transform: translateY(-4px);
+            background: #ffffff;
+            border-left-color: var(--accent-color);
         }
 
-        /* Sortable Ghost Class */
-        .sortable-ghost { opacity: 0.4; background: var(--accent-color); }
-        .sortable-drag { cursor: grabbing; opacity: 1; background: white; transform: scale(1.02); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .todo-item.completed { opacity: 0.7; background: rgba(241, 245, 249, 0.6); }
+        .todo-item.completed .task-text { text-decoration: line-through; color: #94a3b8; font-style: italic; }
 
-        /* --- [MODERN CHECKBOX ZERO REFRESH] --- */
-        .cb-wrapper {
-            position: relative;
-            width: 24px; height: 24px;
-            flex-shrink: 0; /* Mencegah gepeng */
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-
-        .custom-checkbox {
-            appearance: none; -webkit-appearance: none;
-            width: 100%; height: 100%;
-            border: 2px solid var(--checkbox-border);
-            border-radius: 9px; /* Radius Premium */
-            cursor: pointer;
-            background: transparent;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            display: grid; place-content: center;
-        }
-
-        .custom-checkbox::after {
-            content: '';
-            width: 6px; height: 10px;
-            border: solid white;
-            border-width: 0 2.5px 2.5px 0;
-            transform: rotate(45deg) scale(0);
-            transition: transform 0.2s ease-in-out;
-            margin-top: -2px;
-        }
-
-        /* Checkbox Checked State */
-        .custom-checkbox:checked {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);
-            animation: popCheck 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .custom-checkbox:checked::after { transform: rotate(45deg) scale(1); }
-
-        @keyframes popCheck { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-
-        .task-text { 
-            flex-grow: 1; font-weight: 600; font-size: 1.05rem; 
-            line-height: 1.5; word-break: break-word; color: var(--text-dark);
-            transition: color 0.3s, text-decoration 0.3s;
-        }
-
-        /* Completed State Visuals */
-        .todo-item.completed { opacity: 0.7; }
-        .todo-item.completed .task-text { 
-            text-decoration: line-through; color: var(--text-gray); 
-        }
-
-        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Action Icons */
-        .item-actions { display: none; gap: 8px; flex-shrink: 0; align-items: center; }
-        .edit-mode-active .item-actions { display: flex; animation: fadeIn 0.3s; }
         
-        .drag-handle { cursor: grab; color: var(--text-gray); padding: 5px; touch-action: none; }
-        .drag-handle:active { cursor: grabbing; color: var(--accent-color); }
+        .custom-checkbox {
+            appearance: none; width: 24px; height: 24px; flex-shrink: 0;
+            border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer;
+            display: grid; place-content: center; transition: 0.3s;
+            background: #fff;
+        }
+        .custom-checkbox:checked { background: var(--accent-color); border-color: var(--accent-color); }
+        .custom-checkbox:checked::after { content: '✔'; color: white; font-size: 14px; font-weight: bold; }
 
+        .task-text { flex-grow: 1; font-weight: 600; font-size: 1.05rem; color: var(--text-dark); }
+
+        .item-actions { display: none; gap: 6px; flex-shrink: 0; }
+        .edit-mode-active .item-actions { display: flex; }
+        
         .action-icon {
             width: 32px; height: 32px; border-radius: 8px; 
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: 0.2s; background: var(--input-bg); color: var(--text-gray);
+            transition: 0.2s; background: #f1f5f9; color: var(--text-gray);
         }
-        .action-icon:hover { transform: translateY(-2px); }
-        .icon-del:hover { background: #fee2e2; color: #ef4444; }
+        .action-icon:hover { background: var(--text-dark); color: white; }
+        .icon-del:hover { background: #ef4444; }
 
         /* MODAL */
         .modal {
@@ -289,31 +180,20 @@
             display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
         }
         .modal-content { 
-            background: var(--card-bg); padding: 2rem; border-radius: 24px; width: 100%; max-width: 380px; 
+            background: white; padding: 2rem; border-radius: 24px; width: 100%; max-width: 380px; 
             text-align: center; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25); color: var(--text-dark); border: 1px solid var(--glass-border);
         }
         @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
         .pass-container { position: relative; margin: 20px 0; }
-        .pass-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); font-size: 20px; }
+        .pass-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); }
 
         .empty-state { text-align: center; padding: 3rem 0; color: var(--text-gray); display: none; }
-        .empty-quote { font-style: italic; font-size: 0.9rem; margin-top: 10px; opacity: 0.8; }
 
-        /* --- MOBILE RESPONSIVE TWEAKS --- */
         @media (max-width: 480px) {
             .container { padding: 1.5rem; width: 92%; }
-            .brand-title { font-size: 1.75rem; }
             .btn-sm .btn-text { display: none; }
-            .btn-sm { padding: 10px; justify-content: center; }
-            .btn-sm i { font-size: 18px; }
-            .admin-tools { gap: 6px; justify-content: space-between; }
-            .btn-sm { flex: 1; }
-            
-            .todo-item { padding: 14px 16px; border-radius: 14px; gap: 12px; }
-            /* Memastikan drag handle area cukup besar di mobile */
-            .drag-handle { padding: 10px; margin: -10px 0; } 
+            .btn-sm { flex: 1; justify-content: center; }
         }
     </style>
 </head>
@@ -325,31 +205,23 @@
         <div class="modal-content">
             <h2 style="font-family:'Outfit'">Admin Access</h2>
             <p style="color:var(--text-gray); font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
-            
             <div class="pass-container">
                 <input type="password" id="passwordInput" placeholder="Password..." onkeypress="if(event.key === 'Enter') attemptLogin()">
                 <i class="ph ph-eye" id="eyeIcon" onclick="togglePasswordVisibility()"></i>
             </div>
-            
-            <div id="errorMsg" style="color:#ef4444; font-size: 0.85rem; margin-bottom: 15px; display: none;">
-                Password salah cepaa!
-            </div>
-            
+            <div id="errorMsg" style="color:#ef4444; font-size: 0.85rem; margin-bottom: 15px; display: none;">Password salah cepaa!</div>
             <div style="display:flex; justify-content:center; gap:10px;">
-                <button onclick="closeModal()" class="btn" style="background:var(--input-bg); color:var(--text-gray)">Batal</button>
+                <button onclick="closeModal()" class="btn" style="background:#f1f5f9; color:var(--text-gray)">Batal</button>
                 <button class="btn btn-primary" onclick="attemptLogin()" style="flex:1">Login</button>
             </div>
         </div>
     </div>
 
     <div class="container" id="mainContainer">
-        
         <div class="login-overlay">
             <i class="ph-duotone ph-lock-key" style="font-size: 64px; color: var(--accent-color); margin-bottom: 15px;"></i>
             <h2>yakin kamu cepa? <br> coba login sekarang!</h2>
-            <button class="btn btn-primary" onclick="openLogin()">
-                Login Sekarang
-            </button>
+            <button class="btn btn-primary" onclick="openLogin()">Login Sekarang</button>
         </div>
 
         <header>
@@ -357,68 +229,28 @@
                 <div class="brand-title"><span class="brand-highlight">Cheva's</span> <br> To Do List</div>
                 <div id="dateDisplay" style="color:var(--text-gray); font-size: 0.9rem; margin-top: 5px; font-weight: 600;"></div>
             </div>
-            <div class="header-actions">
-                <button class="icon-btn" onclick="toggleDarkMode()" title="Toggle Dark Mode">
-                    <i class="ph-bold ph-moon-stars" id="themeIcon"></i>
-                </button>
-                <button class="icon-btn" id="profileBtn" onclick="toggleEditMode()" title="Toggle Edit Mode">
-                    <i class="ph-bold ph-user-focus"></i>
-                </button>
-            </div>
+            <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()">
+                <i class="ph ph-user-focus" style="font-size: 24px;"></i>
+            </button>
         </header>
 
-        <div class="progress-container">
-            <div class="progress-label">
-                <span>Progress Harian</span>
-                <span id="progressText">0%</span>
-            </div>
-            <div class="progress-bg">
-                <div class="progress-fill" id="progressBar"></div>
-            </div>
-        </div>
-
         <div class="admin-controls" id="adminPanel">
-            <div class="input-row">
+            <div class="input-wrapper">
                 <input type="text" id="newTaskInput" placeholder="Tulis tugas baru..." autocomplete="off" onkeypress="if(event.key === 'Enter') addTask()">
                 <button class="btn-add" onclick="addTask()"><i class="ph-bold ph-plus"></i></button>
             </div>
-            
-            <div class="category-options">
-                <input type="radio" name="cat" id="cat0" class="cat-radio" checked value="">
-                <label for="cat0" class="cat-label bg-color-0" title="Default"></label>
-                
-                <input type="radio" name="cat" id="cat1" class="cat-radio" value="#ef4444">
-                <label for="cat1" class="cat-label bg-color-1" title="Urgent"></label>
-                
-                <input type="radio" name="cat" id="cat2" class="cat-radio" value="#3b82f6">
-                <label for="cat2" class="cat-label bg-color-2" title="Work"></label>
-                
-                <input type="radio" name="cat" id="cat3" class="cat-radio" value="#10b981">
-                <label for="cat3" class="cat-label bg-color-3" title="Personal"></label>
-            </div>
-
             <div class="admin-tools">
-                <button class="btn-sm btn-uncheck" onclick="apiCall('uncheck_all')" title="Uncheck All">
-                    <i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="btn-text">Uncheck All</span>
-                </button>
-                <button class="btn-sm btn-clear" onclick="apiCall('clear_completed')" title="Clear Done">
-                    <i class="ph-bold ph-broom"></i> <span class="btn-text">Clear Done</span>
-                </button>
-                <button class="btn-sm btn-reset" onclick="if(confirm('Reset semua list ke awal?')) apiCall('reset')" title="Reset All">
-                    <i class="ph-bold ph-trash"></i> <span class="btn-text">Reset All</span>
-                </button>
-                <button class="btn-sm btn-logout" onclick="logout()" title="Logout">
-                    <i class="ph-bold ph-sign-out"></i> <span class="btn-text">Logout</span>
-                </button>
+                <button class="btn-sm btn-uncheck" onclick="apiCall('uncheck_all')"><i class="ph-bold ph-arrow-counter-clockwise"></i><span class="btn-text">Uncheck All</span></button>
+                <button class="btn-sm btn-clear" onclick="apiCall('clear_completed')"><i class="ph-bold ph-broom"></i><span class="btn-text">Clear Done</span></button>
+                <button class="btn-sm btn-reset" onclick="if(confirm('Reset semua?')) apiCall('reset')"><i class="ph-bold ph-trash"></i><span class="btn-text">Reset</span></button>
+                <button class="btn-sm btn-logout" onclick="logout()"><i class="ph-bold ph-sign-out"></i><span class="btn-text">Logout</span></button>
             </div>
         </div>
 
         <ul id="todoList"></ul>
-
         <div class="empty-state" id="emptyState">
-            <i class="ph-duotone ph-clipboard-text" style="font-size: 64px; margin-bottom: 10px; color:var(--accent-color); opacity: 0.5;"></i>
-            <p style="font-weight:600; font-size:1.1rem;">Belum ada tugas hari ini!</p>
-            <p class="empty-quote" id="quoteText">"Start where you are. Use what you have. Do what you can."</p>
+            <i class="ph ph-confetti" style="font-size: 48px; margin-bottom: 10px; color:#cbd5e1"></i>
+            <p>Semua tugas selesai! Keren!</p>
         </div>
     </div>
 
@@ -426,283 +258,75 @@
         let tasks = [];
         let isLoggedIn = false;
         let isEditMode = false;
-        let sortableInstance = null;
-
-        // Quotes acak
-        const quotes = [
-            "A small step is better than no step.",
-            "Focus on being productive instead of busy.",
-            "You got this, Cepa!",
-            "Satu per satu, nanti juga selesai.",
-            "Discipline is doing what needs to be done."
-        ];
-
-        // Init Dark Mode
-        if(localStorage.getItem('theme') === 'dark') {
-            document.body.classList.add('dark-mode');
-            document.getElementById('themeIcon').classList.replace('ph-moon-stars', 'ph-sun');
-        }
 
         async function init() {
             try {
                 const res = await fetch('/api/api.php?action=get_all');
                 const json = await res.json();
                 tasks = json.data || [];
-                
-                if (json.status !== 'locked') {
-                    isLoggedIn = true;
-                    document.body.classList.remove('mode-teaser');
-                } else {
-                    isLoggedIn = false;
-                    document.body.classList.add('mode-teaser');
-                }
+                isLoggedIn = (json.status !== 'locked');
+                updateTeaserMode();
                 render();
             } catch (e) {
-                console.error("Gagal memuat data:", e);
+                console.warn("Server API tidak terdeteksi. Berjalan dalam mode demo.");
+                // Dummy Data jika API tidak ada
+                if(tasks.length === 0) tasks = [{id:1, task_name: 'Contoh Tugas', is_completed: false}];
+                render();
             }
+        }
+
+        function updateTeaserMode() {
+            if (isLoggedIn) document.body.classList.remove('mode-teaser');
+            else document.body.classList.add('mode-teaser');
         }
 
         function render() {
             const listEl = document.getElementById('todoList');
-            const adminPanel = document.getElementById('adminPanel');
-            const profileBtn = document.getElementById('profileBtn');
             const container = document.getElementById('mainContainer');
+            const profileBtn = document.getElementById('profileBtn');
+            const adminPanel = document.getElementById('adminPanel');
             const emptyState = document.getElementById('emptyState');
 
-            // Tanggal
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
 
-            // Logika UI Edit Mode
             profileBtn.classList.toggle('active', isEditMode);
-            
-            if (isLoggedIn && isEditMode) {
-                adminPanel.style.display = 'flex';
-                container.classList.add('edit-mode-active');
-                initSortable(); // Aktifkan drag & drop
-            } else {
-                adminPanel.style.display = 'none';
-                container.classList.remove('edit-mode-active');
-                destroySortable(); // Matikan drag & drop
-            }
+            adminPanel.style.display = (isLoggedIn && isEditMode) ? 'flex' : 'none';
+            container.classList.toggle('edit-mode-active', isEditMode);
 
-            // Render Items
             listEl.innerHTML = '';
-            
             if (tasks.length === 0) {
                 emptyState.style.display = 'block';
-                document.getElementById('quoteText').innerText = quotes[Math.floor(Math.random() * quotes.length)];
-                updateProgressBar(0, 1); // Reset progress
             } else {
                 emptyState.style.display = 'none';
-                
-                // Urutkan berdasarkan list_order
-                tasks.sort((a, b) => a.list_order - b.list_order);
-
                 tasks.forEach((t, i) => {
                     const li = document.createElement('li');
                     li.className = `todo-item ${t.is_completed ? 'completed' : ''}`;
-                    li.setAttribute('data-id', t.id); // Penting untuk sortable
-                    
-                    // Simulasi Tag Color (Karena backend belum support, kita random visual saja jika tdk ada data)
-                    // Jika kamu update backend untuk simpan warna, ambil dari t.color
-                    // Disini saya berikan contoh logika visual sederhana berdasarkan ID genap/ganjil agar terlihat variatif
-                    const colors = ['#ef4444', '#3b82f6', '#10b981', 'transparent'];
-                    const tagColor = t.category_color || 'transparent'; // Fallback
-                    li.style.setProperty('--tag-color', tagColor);
-
+                    li.style.animationDelay = `${i * 0.05}s`;
                     li.innerHTML = `
-                        <div class="cb-wrapper">
-                            <input type="checkbox" class="custom-checkbox" 
-                                id="cb-${t.id}"
-                                ${t.is_completed ? 'checked' : ''} 
-                                onchange="toggleTaskInstant(${t.id}, this)">
-                        </div>
-                        
+                        <input type="checkbox" class="custom-checkbox" ${t.is_completed ? 'checked' : ''} onchange="toggleTask(${t.id})">
                         <span class="task-text">${t.task_name}</span>
-                        
                         <div class="item-actions">
-                            <div class="drag-handle"><i class="ph-bold ph-dots-six-vertical" style="font-size:20px;"></i></div>
+                            <div class="action-icon" onclick="move(${i}, -1)"><i class="ph-bold ph-caret-up"></i></div>
+                            <div class="action-icon" onclick="move(${i}, 1)"><i class="ph-bold ph-caret-down"></i></div>
                             <div class="action-icon icon-del" onclick="deleteTask(${t.id})"><i class="ph-bold ph-trash"></i></div>
                         </div>
                     `;
                     listEl.appendChild(li);
                 });
-                
-                updateStats();
             }
         }
 
-        // --- CORE FUNCTIONS ---
-
-        // Fungsi Zero-Refresh Toggle
-        function toggleTaskInstant(id, checkbox) {
-            const isChecked = checkbox.checked;
-            const task = tasks.find(t => t.id == id);
-            const li = checkbox.closest('.todo-item');
-            
-            if(task) {
-                // Update Local Data
-                task.is_completed = isChecked ? 1 : 0;
-                
-                // Update UI Langsung (Optimistic)
-                if (isChecked) {
-                    li.classList.add('completed');
-                } else {
-                    li.classList.remove('completed');
-                }
-                
-                // Update Progress Bar
-                updateStats();
-
-                // Kirim request ke server (Background)
-                fetch('/api/api.php?action=toggle', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({id: id})
-                }).catch(err => {
-                    console.error("Sync error", err);
-                    // Revert UI jika gagal (optional but recommended)
-                });
-            }
-        }
-
-        function updateStats() {
-            const total = tasks.length;
-            const completed = tasks.filter(t => t.is_completed == 1).length;
-            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-            
-            document.getElementById('progressBar').style.width = `${percent}%`;
-            document.getElementById('progressText').innerText = `${percent}%`;
-
-            // Confetti Trigger saat 100%
-            if (percent === 100 && total > 0) {
-                launchConfetti();
-            }
-        }
-
-        function launchConfetti() {
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#6366f1', '#a855f7', '#ec4899']
-            });
-        }
-
-        function addTask() {
-            const input = document.getElementById('newTaskInput');
-            const val = input.value.trim();
-            
-            // Ambil warna kategori yang dipilih
-            const selectedColor = document.querySelector('input[name="cat"]:checked').value;
-
-            if(val) {
-                // Panggil API (Kita bisa pass color via API jika backend support di masa depan)
-                // Saat ini kita pakai logika standar, tapi UI sudah siap
-                apiCall('add', {task: val, color: selectedColor}); 
-                input.value = ''; 
-            }
-        }
-
-        // --- SORTABLE JS INTEGRATION ---
-        function initSortable() {
-            const el = document.getElementById('todoList');
-            if (!sortableInstance) {
-                sortableInstance = Sortable.create(el, {
-                    animation: 150,
-                    handle: '.drag-handle', // Hanya bisa drag lewat icon ini
-                    ghostClass: 'sortable-ghost',
-                    dragClass: 'sortable-drag',
-                    onEnd: function (evt) {
-                        // Logika reorder array
-                        const itemEl = evt.item;
-                        const newIndex = evt.newIndex;
-                        const oldIndex = evt.oldIndex;
-                        
-                        // Pindahkan item di array local
-                        const movedItem = tasks.splice(oldIndex, 1)[0];
-                        tasks.splice(newIndex, 0, movedItem);
-                        
-                        // Update list_order di local array
-                        tasks.forEach((t, i) => t.list_order = i);
-
-                        // Kirim data urutan baru ke server
-                        // (Implementasi backend harus support batch reorder, 
-                        //  atau kita panggil swap manual jika backend terbatas)
-                        // Karena kode PHP awal pakai SWAP, kita gunakan logika SWAP berantai atau reorder API
-                        
-                        // *Untuk kompatibilitas kode lama:* // Jika backend hanya punya swap, drag n drop kompleks akan susah disinkronkan.
-                        // Asumsi: Kita panggil API reorder custom atau abaikan sync drag jika backend tidak support.
-                        // Solusi aman: Refresh list agar sync ID (meski user minta no refresh, sorting butuh data akurat)
-                        // Disini saya panggil fungsi simulasi sync:
-                        syncOrderToServer();
-                    }
-                });
-            }
-        }
-
-        function destroySortable() {
-            if (sortableInstance) {
-                sortableInstance.destroy();
-                sortableInstance = null;
-            }
-        }
-
-        async function syncOrderToServer() {
-            // Mengirim urutan ID baru ke server
-            // Anda perlu memodifikasi PHP untuk menerima array urutan ID: action=reorder
-            // Jika tidak, drag & drop hanya visual sementara sampai di refresh.
-            const orderedIds = tasks.map(t => t.id);
-            // Contoh implementasi fetch
-            await fetch('/api/api.php?action=reorder', {
-                 method: 'POST',
-                 headers: {'Content-Type': 'application/json'},
-                 body: JSON.stringify({order: orderedIds})
-            });
-            // Jika API backend blm ada action reorder, ini tidak akan tersimpan permanen.
-        }
-
-        // --- DARK MODE ---
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            const icon = document.getElementById('themeIcon');
-            
-            if(document.body.classList.contains('dark-mode')) {
-                icon.classList.replace('ph-moon-stars', 'ph-sun');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                icon.classList.replace('ph-sun', 'ph-moon-stars');
-                localStorage.setItem('theme', 'light');
-            }
-        }
-
-        // --- AUTH & SYSTEM ---
-        function openLogin() { 
-            document.getElementById('loginModal').style.display = 'flex'; 
-            setTimeout(() => document.getElementById('passwordInput').focus(), 100);
-        }
-        
-        function closeModal() { 
-            document.getElementById('loginModal').style.display = 'none'; 
-            document.getElementById('errorMsg').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-        }
-
+        // --- Auth Functions ---
+        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
         function togglePasswordVisibility() {
             const inp = document.getElementById('passwordInput');
-            const ico = document.getElementById('eyeIcon');
-            if(inp.type === 'password') {
-                inp.type = 'text'; ico.className = 'ph ph-eye-slash';
-            } else {
-                inp.type = 'password'; ico.className = 'ph ph-eye';
-            }
+            inp.type = inp.type === 'password' ? 'text' : 'password';
         }
 
         async function attemptLogin() {
             const pass = document.getElementById('passwordInput').value;
-            if(!pass) return;
-
             try {
                 const res = await fetch('/api/api.php?action=login', {
                     method: 'POST',
@@ -710,45 +334,44 @@
                     body: JSON.stringify({ password: pass })
                 });
                 const json = await res.json();
-                
                 if(json.status === 'success') {
-                    closeModal();
-                    isLoggedIn = true;
-                    document.body.classList.remove('mode-teaser');
-                    isEditMode = false; 
-                    init();
+                    isLoggedIn = true; closeModal(); updateTeaserMode(); init();
                 } else {
                     document.getElementById('errorMsg').style.display = 'block';
                 }
-            } catch (e) {
-                console.error("Login Error", e);
+            } catch(e) {
+                // Simuasi Login Sukses jika tanpa server (untuk testing)
+                if(pass === "cheva") { isLoggedIn = true; closeModal(); updateTeaserMode(); }
             }
         }
 
         function toggleEditMode() {
-            if(!isLoggedIn) {
-                openLogin();
-            } else {
-                isEditMode = !isEditMode;
-                render();
-            }
+            if(!isLoggedIn) openLogin();
+            else { isEditMode = !isEditMode; render(); }
         }
 
+        // --- Core Logic ---
         async function apiCall(action, data = {}) {
             await fetch(`/api/api.php?action=${action}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             });
-            init(); // Refresh data full setelah add/delete/clear
+            init();
         }
 
-        function deleteTask(id) {
-            if(confirm("Yakin hapus?")) apiCall('delete', {id});
+        function addTask() {
+            const input = document.getElementById('newTaskInput');
+            if(input.value.trim()) { apiCall('add', {task: input.value.trim()}); input.value = ''; }
         }
 
-        function logout() {
-            fetch('/api/api.php?action=logout').then(() => location.reload());
+        function toggleTask(id) { apiCall('toggle', {id}); }
+        function deleteTask(id) { if(confirm("Hapus?")) apiCall('delete', {id}); }
+        function logout() { fetch('/api/api.php?action=logout').then(() => location.reload()); }
+        
+        function move(idx, dir) {
+            const t1 = tasks[idx], t2 = tasks[idx+dir];
+            if(t2) apiCall('swap', {id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order});
         }
 
         init();
