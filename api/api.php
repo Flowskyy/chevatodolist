@@ -54,7 +54,7 @@ function saveTasks($tasks) {
 
 $action = $_GET['action'] ?? '';
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
-$ADMIN_PASS = 'cepaimut';
+$ADMIN_PASS = 'cepayakinn'; 
 
 function isAdmin() { return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true; }
 
