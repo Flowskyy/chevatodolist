@@ -27,373 +27,198 @@
             background-color: #f3f4f6;
             color: var(--text-dark);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow-x: hidden;
-            position: relative;
+            display: flex; justify-content: center; align-items: center;
+            overflow-x: hidden; position: relative;
         }
-        /* --- 2. DECORATIVE BACKGROUND (BLOBS) --- */
-        .bg-blob {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            opacity: 0.6;
-            animation: floatBlob 10s infinite alternate;
-        }
+
+        /* --- 2. DECORATIVE BACKGROUND --- */
+        .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.6; animation: floatBlob 10s infinite alternate; }
         .blob-1 { width: 400px; height: 400px; background: #c084fc; top: -100px; left: -100px; }
         .blob-2 { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; right: -50px; animation-delay: -5s; }
-        .blob-3 { width: 200px; height: 200px; background: #f472b6; top: 40%; left: 30%; animation-duration: 15s; }
-        @keyframes floatBlob {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(30px, 50px) scale(1.1); }
-        }
-        /* --- 3. LOADING SCREEN --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(10px);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 9999; transition: opacity 0.6s ease;
-        }
-        .loader-text { margin-top: 15px; font-weight: 700; font-family: 'Outfit', sans-serif; font-size: 1.5rem; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .spinner { width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top: 4px solid var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        /* --- 4. MAIN CONTAINER (GLASSMORPHISM) --- */
+        @keyframes floatBlob { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
+
+        /* --- 3. CONTAINER & GLASS --- */
         .container {
             width: 90%; max-width: 550px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--glass-shadow);
-            padding: 2.5rem;
-            position: relative;
-            margin: 40px 0;
-            transition: transform 0.3s;
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative; transition: 0.5s;
         }
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
-        .brand-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2rem;
-            font-weight: 800;
-            line-height: 1.1;
-        }
-        .brand-highlight {
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .date-badge {
-            display: inline-block;
-            margin-top: 8px;
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.6);
-            border-radius: 20px;
-            font-size: 0.85rem;
-            color: var(--text-gray);
-            font-weight: 500;
-            border: 1px solid white;
-        }
-        .profile-btn {
-            background: white;
-            border: none;
-            width: 48px; height: 48px;
-            border-radius: 14px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-            color: var(--text-gray);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .profile-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2); color: var(--accent-color); }
-        .profile-btn.active { background: var(--primary-gradient); color: white; }
+
+        /* TEASER MODE: Efek Blur untuk yang belum login */
+        .mode-teaser .todo-item, .mode-teaser header { filter: blur(8px); pointer-events: none; user-select: none; }
         
+        /* Overlay Tulisan Login */
+        .login-overlay {
+            position: absolute; inset: 0; z-index: 100;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 20px; border-radius: var(--radius-xl);
+        }
+        .mode-teaser .login-overlay { display: flex; }
+        .login-overlay h2 { font-family: 'Outfit'; font-size: 1.5rem; margin-bottom: 1rem; color: var(--text-dark); }
+
+        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+        .brand-title { font-family: 'Outfit'; font-size: 2rem; font-weight: 800; line-height: 1.1; }
+        .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .profile-btn {
+            background: white; border: none; width: 48px; height: 48px; border-radius: 14px;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s;
+            color: var(--text-gray); display: flex; align-items: center; justify-content: center;
+        }
+        .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(10deg); }
+
+        /* ADMIN PANEL */
         .admin-controls {
-            background: white;
-            padding: 1.5rem;
-            border-radius: var(--radius-md);
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.05);
-            display: none;
-            flex-direction: column; gap: 12px;
-            animation: slideDown 0.3s ease-out;
+            background: white; padding: 1.5rem; border-radius: var(--radius-md);
+            margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 12px;
+            animation: slideDown 0.3s ease-out; border: 1px solid rgba(0,0,0,0.05);
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .input-wrapper { display: flex; gap: 10px; position: relative; align-items: stretch; }
+
+        /* INPUTS & BUTTONS */
+        .input-wrapper { display: flex; gap: 10px; }
         input[type="text"], input[type="password"] {
-            flex-grow: 1;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 2px solid #e2e8f0;
-            outline: none; transition: 0.3s;
-            background: #f8fafc;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            width: 100%;
+            flex-grow: 1; padding: 14px 16px; border-radius: 12px;
+            border: 2px solid #e2e8f0; outline: none; background: #f8fafc;
         }
-        input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent-color); background: white; }
+        .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 20px; display: flex; align-items: center; gap: 6px; }
+        .btn-primary { background: var(--primary-gradient); color: white; }
+        .btn-add { background: var(--text-dark); color: white; }
 
-        .btn {
-            border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 20px;
-            transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .btn-add { background: var(--text-dark); color: white; min-width: 50px; }
-        .btn-add:hover { background: black; transform: scale(1.05); }
-        
-        .admin-tools { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
-        .btn-sm {
-             font-size: 0.8rem; padding: 8px 12px; border-radius: 8px;
-             display: flex; align-items: center; gap: 5px; white-space: nowrap;
-            transition: all 0.2s ease;
-        }
-        .btn-sm:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .btn-uncheck { background: #dbeafe; color: #1e40af; }
-        .btn-clear { background: #fef3c7; color: #92400e; }
-        .btn-danger { background: #fee2e2; color: #ef4444; }
-        .btn-logout { background: #f1f5f9; color: var(--text-gray); }
-
+        /* LIST ITEMS */
         ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
         .todo-item {
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid white;
-            padding: 16px;
-            border-radius: 16px;
-            display: flex; align-items: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            background: rgba(255, 255, 255, 0.6); border: 1px solid white;
+            padding: 16px; border-radius: 16px; display: flex; align-items: center; transition: 0.3s;
         }
-        .todo-item:hover {
-            transform: translateX(4px) scale(1.01);
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.03);
-        }
-        .checkbox-wrapper { margin-right: 16px; display: flex; align-items: center; }
-        .custom-checkbox {
-            appearance: none; width: 26px; height: 26px;
-            border: 2px solid #cbd5e1; border-radius: 8px;
-            cursor: pointer; transition: 0.3s;
-            position: relative;
-        }
-        .custom-checkbox:checked { background-color: var(--accent-color); border-color: var(--accent-color); }
-        .custom-checkbox:checked::after {
-            content: '\2713'; font-size: 16px; color: white;
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); font-weight: bold;
-        }
-        .task-text { flex-grow: 1; font-size: 1.05rem; font-weight: 500; color: var(--text-dark); }
-        .completed .task-text { text-decoration: line-through; color: #94a3b8; }
-        .completed { opacity: 0.8; background: rgba(255,255,255,0.4); }
+        .todo-item.completed { opacity: 0.6; }
+        .todo-item.completed .task-text { text-decoration: line-through; }
+        .task-text { flex-grow: 1; font-weight: 500; padding: 0 15px; }
 
-        .item-actions { display: flex; gap: 6px; margin-left: 10px; opacity: 0.6; }
-        .todo-item:hover .item-actions { opacity: 1; }
-        .action-icon {
-            width: 32px; height: 32px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
-            background: rgba(0,0,0,0.03);
-        }
-        .action-icon.move-up { color: #3b82f6; }
-        .action-icon.move-down { color: #8b5cf6; }
-        .action-icon.delete { color: #ef4444; }
+        .item-actions { display: none; gap: 6px; }
+        .edit-mode-active .item-actions { display: flex; }
 
-        .empty-state { text-align: center; padding: 4rem 0; color: var(--text-gray); display: none; }
-        .empty-state i { font-size: 64px; margin-bottom: 1rem; color: #cbd5e1; display: block; }
-
+        /* MODAL */
         .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
-            display: none; justify-content: center; align-items: center;
-            z-index: 10000;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
         }
-        .modal-content {
-            background: white; padding: 2.5rem; border-radius: 24px;
-            width: 90%; max-width: 400px; text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .error-msg { background: #fee2e2; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-top: 10px; display: none; }
-
-        @media (max-width: 640px) {
-            .container { padding: 1.5rem; width: 95%; }
-            .btn-sm .btn-text { display: none; }
-        }
+        .modal-content { background: white; padding: 2.5rem; border-radius: 24px; width: 90%; max-width: 400px; text-align: center; }
+        
+        .pass-container { position: relative; margin: 15px 0; }
+        .pass-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); }
     </style>
 </head>
-<body>
+<body class="mode-teaser">
+
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
-    <div class="bg-blob blob-3"></div>
-
-    <div id="loader">
-        <div class="spinner"></div>
-        <div class="loader-text">Cheva's List</div>
-    </div>
 
     <div id="loginModal" class="modal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 1rem; font-family:'Outfit', sans-serif;">Admin Access</h2>
-            <p style="color:#64748b; margin-bottom: 1.5rem; font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
-            
-            <div style="position: relative; margin-bottom: 10px;">
-                <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key === 'Enter') attemptLogin()" style="padding-right: 45px;">
-                <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; display: flex; align-items: center;">
-                    <i class="ph-bold ph-eye" id="eyeIcon" style="font-size: 20px;"></i>
-                </button>
+            <h2 style="font-family:'Outfit'">Admin Access</h2>
+            <p style="color:var(--text-gray); font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
+            <div class="pass-container">
+                <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key === 'Enter') attemptLogin()">
+                <i class="ph ph-eye" id="eyeIcon" onclick="togglePasswordVisibility()"></i>
             </div>
-
-            <div class="error-msg" id="errorMsg"></div>
-            
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 15px;">
-                <button onclick="closeModal()" class="btn" style="color:#64748b; background:transparent;">Batal</button>
-                <button class="btn" style="background:var(--primary-gradient); color:white;" onclick="attemptLogin()">Login</button>
+            <div id="errorMsg" style="color:#ef4444; font-size: 0.8rem; margin-bottom: 10px; display: none;">Password salah cepaa!</div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="closeModal()" class="btn" style="background:transparent; color:var(--text-gray)">Batal</button>
+                <button class="btn btn-primary" onclick="attemptLogin()">Login</button>
             </div>
         </div>
     </div>
 
-    <div class="container">
+    <div class="container" id="mainContainer">
+        <div class="login-overlay">
+            <i class="ph ph-lock-key" style="font-size: 48px; color: var(--accent-color); margin-bottom: 10px;"></i>
+            <h2>yakin kamu cepa? <br> coba login sekarang!</h2>
+            <button class="btn btn-primary" onclick="openLogin()">Login Sekarang</button>
+        </div>
+
         <header>
             <div>
                 <div class="brand-title"><span class="brand-highlight">Cheva's</span> <br> To Do List</div>
-                <div class="date-badge" id="dateDisplay">Loading date...</div>
+                <div id="dateDisplay" style="color:var(--text-gray); font-size: 0.85rem; margin-top: 5px;"></div>
             </div>
-            <button class="profile-btn" id="profileBtn" onclick="handleProfileClick()" title="Login Admin">
-                <i class="ph ph-user" style="font-size: 24px;"></i>
+            <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()">
+                <i class="ph ph-user-focus" style="font-size: 24px;"></i>
             </button>
         </header>
 
         <div class="admin-controls" id="adminPanel">
             <div class="input-wrapper">
                 <input type="text" id="newTaskInput" placeholder="Apa yang harus dilakukan oleh cepaaa?" onkeypress="if(event.key === 'Enter') addTask()">
-                <button class="btn btn-add" onclick="addTask()" title="Tambah task">
-                    <i class="ph-bold ph-plus" style="font-size:20px;"></i>
-                </button>
+                <button class="btn btn-add" onclick="addTask()"><i class="ph ph-plus-bold"></i></button>
             </div>
-            <div class="admin-tools">
-                <button class="btn btn-sm btn-uncheck" onclick="uncheckAll()">
-                    <i class="ph ph-arrow-counter-clockwise"></i> <span class="btn-text">Uncheck All</span>
-                </button>
-                <button class="btn btn-sm btn-clear" onclick="clearCompleted()">
-                    <i class="ph ph-broom"></i> <span class="btn-text">Clear Done</span>
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="resetList()">
-                    <i class="ph ph-trash-bold"></i> <span class="btn-text">Reset All</span>
-                </button>
-                <button class="btn btn-sm btn-logout" onclick="logout()">
-                    <i class="ph ph-sign-out-bold"></i> <span class="btn-text">Logout</span>
-                </button>
+            <div style="display:flex; gap:8px; justify-content: flex-end; margin-top: 5px;">
+                <button class="btn" style="font-size: 0.75rem; padding: 8px 12px; background:#f1f5f9" onclick="logout()">Logout</button>
             </div>
         </div>
 
         <ul id="todoList"></ul>
-
-        <div class="empty-state" id="emptyState">
-            <i class="ph ph-sparkle"></i>
-            <h3>Wow, bersih sekali!</h3>
-            <p style="font-size: 0.9rem;">Tidak ada tugas yang harus dilakukan saat ini.</p>
-        </div>
     </div>
 
     <script>
         let tasks = [];
-        let isEditModeActive = false; // Status apakah panel admin terbuka
-        let userIsLoggedIn = false;  // Status apakah user sudah login di session
+        let isLoggedIn = false;
+        let isEditMode = false;
 
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const loader = document.getElementById('loader');
-                loader.style.opacity = '0';
-                loader.style.pointerEvents = 'none';
-                setTimeout(() => loader.style.display = 'none', 600);
-            }, 800);
-
-            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
-            fetchTasks();
-        });
-
-        async function fetchTasks() {
-            try {
-                const res = await fetch('/api/api.php?action=get_all', { credentials: 'include' });
-                const json = await res.json();
-                if (json.status === 'success') {
-                    tasks = json.data;
-                    userIsLoggedIn = json.isAdmin;
-                    updateUI();
-                }
-            } catch (e) { console.error("Error Fetch:", e); }
+        async function init() {
+            const res = await fetch('/api/api.php?action=get_all');
+            const json = await res.json();
+            
+            // Tampilan tetap mengambil data (untuk efek blur di background)
+            tasks = json.data || [];
+            
+            if (json.status !== 'locked') {
+                isLoggedIn = true;
+                document.body.classList.remove('mode-teaser');
+            }
+            render();
         }
 
-        function updateUI() {
+        function render() {
             const listEl = document.getElementById('todoList');
             const adminPanel = document.getElementById('adminPanel');
             const profileBtn = document.getElementById('profileBtn');
-            const emptyState = document.getElementById('emptyState');
+            const container = document.getElementById('mainContainer');
 
-            listEl.innerHTML = '';
-            
-            // Logika View Mode vs Edit Mode
-            if (userIsLoggedIn && isEditModeActive) {
-                adminPanel.style.display = 'flex';
-                profileBtn.classList.add('active');
-            } else {
-                adminPanel.style.display = 'none';
-                profileBtn.classList.remove('active');
-            }
+            // Handle Profile Button Active State
+            profileBtn.classList.toggle('active', isEditMode);
+            adminPanel.style.display = (isLoggedIn && isEditMode) ? 'flex' : 'none';
+            container.classList.toggle('edit-mode-active', isEditMode);
 
-            if (tasks.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-                tasks.forEach((task, index) => {
-                    const li = document.createElement('li');
-                    const isDone = task.is_completed;
-                    li.className = `todo-item ${isDone ? 'completed' : ''}`;
-                    
-                    const adminActions = (userIsLoggedIn && isEditModeActive) ? `
-                        <div class="item-actions">
-                            <div class="action-icon move-up" onclick="moveTask(${index}, -1)"><i class="ph-bold ph-caret-up"></i></div>
-                            <div class="action-icon move-down" onclick="moveTask(${index}, 1)"><i class="ph-bold ph-caret-down"></i></div>
-                            <div class="action-icon delete" onclick="deleteTask(${task.id})"><i class="ph-bold ph-trash"></i></div>
-                        </div>` : '';
+            listEl.innerHTML = tasks.map((t, i) => `
+                <li class="todo-item ${t.is_completed ? 'completed' : ''}">
+                    <input type="checkbox" style="width:24px; height:24px; cursor:pointer" 
+                        ${t.is_completed ? 'checked' : ''} 
+                        onchange="apiCall('toggle', {id:${t.id}})">
+                    <span class="task-text">${t.task_name}</span>
+                    <div class="item-actions">
+                        <div onclick="move(${i}, -1)" style="cursor:pointer; color:#6366f1"><i class="ph-bold ph-caret-up"></i></div>
+                        <div onclick="move(${i}, 1)" style="cursor:pointer; color:#a855f7"><i class="ph-bold ph-caret-down"></i></div>
+                        <div onclick="apiCall('delete', {id:${t.id}})" style="cursor:pointer; color:#ef4444; margin-left:5px"><i class="ph-bold ph-trash"></i></div>
+                    </div>
+                </li>
+            `).join('');
 
-                    li.innerHTML = `
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" class="custom-checkbox" ${isDone ? 'checked' : ''} onchange="toggleTask(${task.id})">
-                        </div>
-                        <span class="task-text">${task.task_name}</span>
-                        ${adminActions}
-                    `;
-                    listEl.appendChild(li);
-                });
-            }
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
         }
 
-        function handleProfileClick() {
-            if (!userIsLoggedIn) {
-                document.getElementById('loginModal').style.display = 'flex';
-                document.getElementById('passwordInput').focus();
-            } else {
-                // Jika sudah login, tombol profil berfungsi sebagai toggle Edit/View mode
-                isEditModeActive = !isEditModeActive;
-                updateUI();
-            }
-        }
+        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
 
         function togglePasswordVisibility() {
-            const passInput = document.getElementById('passwordInput');
-            const eyeIcon = document.getElementById('eyeIcon');
-            if (passInput.type === 'password') {
-                passInput.type = 'text';
-                eyeIcon.className = 'ph-bold ph-eye-slash';
+            const inp = document.getElementById('passwordInput');
+            const ico = document.getElementById('eyeIcon');
+            if(inp.type === 'password') {
+                inp.type = 'text'; ico.className = 'ph ph-eye-slash';
             } else {
-                passInput.type = 'password';
-                eyeIcon.className = 'ph-bold ph-eye';
+                inp.type = 'password'; ico.className = 'ph ph-eye';
             }
         }
 
@@ -401,60 +226,43 @@
             const pass = document.getElementById('passwordInput').value;
             const res = await fetch('/api/api.php?action=login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass }),
-                credentials: 'include'
+                body: JSON.stringify({ password: pass })
             });
             const json = await res.json();
-            if (json.status === 'success') {
-                userIsLoggedIn = true;
-                isEditModeActive = false; // Sesuai permintaan: tidak langsung masuk mode edit
-                closeModal();
-                fetchTasks();
+            if(json.status === 'success') {
+                location.reload();
             } else {
-                const err = document.getElementById('errorMsg');
-                err.textContent = "Password salah cepaa!";
-                err.style.display = 'block';
+                document.getElementById('errorMsg').style.display = 'block';
             }
         }
 
-        function closeModal() {
-            document.getElementById('loginModal').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('errorMsg').style.display = 'none';
+        function toggleEditMode() {
+            if(!isLoggedIn) return openLogin();
+            isEditMode = !isEditMode;
+            render();
         }
 
-        async function apiRequest(action, data = {}) {
+        async function apiCall(action, data = {}) {
             await fetch(`/api/api.php?action=${action}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-                credentials: 'include'
+                body: JSON.stringify(data)
             });
-            fetchTasks();
+            init();
         }
 
         function addTask() {
-            const input = document.getElementById('newTaskInput');
-            if (input.value.trim()) { apiRequest('add', { task: input.value }); input.value = ''; }
+            const val = document.getElementById('newTaskInput').value;
+            if(val) { apiCall('add', {task: val}); document.getElementById('newTaskInput').value = ''; }
         }
 
-        function toggleTask(id) { apiRequest('toggle', { id }); }
-        function deleteTask(id) { if(confirm("Yakin hapus tugas ini cepaa?")) apiRequest('delete', { id }); }
-        function uncheckAll() { if(confirm("Uncheck semua?")) apiRequest('uncheck_all'); }
-        function clearCompleted() { if(confirm("Hapus yang sudah selesai?")) apiRequest('clear_completed'); }
-        function resetList() { if(confirm("Kamu yakin reset semua list ke awal?")) apiRequest('reset'); }
-        function moveTask(index, direction) {
-            const t1 = tasks[index];
-            const t2 = tasks[index + direction];
-            if(t2) apiRequest('swap', { id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order });
+        function move(idx, dir) {
+            const t1 = tasks[idx], t2 = tasks[idx+dir];
+            if(t2) apiCall('swap', {id1:t1.id, order1:t1.list_order, id2:t2.id, order2:t2.list_order});
         }
-        async function logout() {
-            await fetch('/api/api.php?action=logout', { credentials: 'include' });
-            userIsLoggedIn = false;
-            isEditModeActive = false;
-            fetchTasks();
-        }
+
+        function logout() { fetch('/api/api.php?action=logout').then(() => location.reload()); }
+
+        init();
     </script>
 </body>
 </html>
