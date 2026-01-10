@@ -12,12 +12,13 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <style>
+        /* --- CORE & RESET --- */
         :root {
             --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
             --accent-color: #8B5CF6;
-            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-bg: rgba(255, 255, 255, 0.9); /* Lebih solid untuk tampilan bersih */
             --glass-border: rgba(255, 255, 255, 0.8);
-            --glass-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
+            --glass-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.08);
             --text-dark: #1e293b;
             --text-gray: #64748b;
             --radius-xl: 24px;
@@ -32,10 +33,10 @@
             min-height: 100vh;
             display: flex; justify-content: center; align-items: flex-start;
             overflow-x: hidden; position: relative;
-            padding: 60px 0;
+            padding: 40px 0;
         }
 
-        /* --- BACKGROUND --- */
+        /* --- DEKORASI BACKGROUND --- */
         .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.6; animation: floatBlob 10s infinite alternate; }
         .blob-1 { width: 400px; height: 400px; background: #c084fc; top: -100px; left: -100px; }
         .blob-2 { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; right: -50px; animation-delay: -5s; }
@@ -43,117 +44,160 @@
 
         /* --- CONTAINER --- */
         .container {
-            width: 90%; max-width: 500px;
+            width: 90%; max-width: 480px;
             background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative;
+            box-shadow: var(--glass-shadow); padding: 2rem; position: relative;
         }
 
-        .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .empty-state, .mode-teaser .progress-container { 
-            filter: blur(10px); pointer-events: none; opacity: 0.5;
+        /* Mode Teaser (Blur) */
+        .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .progress-container, .mode-teaser .empty-state { 
+            filter: blur(8px); pointer-events: none; opacity: 0.6;
         }
-        
         .login-overlay {
             position: absolute; inset: 0; z-index: 100; display: none;
             flex-direction: column; justify-content: center; align-items: center; text-align: center;
         }
-        .mode-teaser .login-overlay { display: flex; animation: fadeIn 0.5s ease; }
+        .mode-teaser .login-overlay { display: flex; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* --- PROGRESS BAR --- */
-        .progress-container { margin-bottom: 2rem; }
-        .progress-info { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text-gray); }
-        .progress-track { width: 100%; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
-        .progress-fill { 
-            width: 0%; height: 100%; background: var(--primary-gradient); 
-            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); 
-        }
-
-        /* --- HEADER --- */
+        /* --- HEADER & PROGRESS BAR (Fitur 4) --- */
         header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
-        .brand-title { font-family: 'Outfit'; font-size: 2rem; font-weight: 800; line-height: 1.1; }
+        .brand-title { font-family: 'Outfit'; font-size: 1.8rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; }
         .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
         .profile-btn {
-            background: white; border: none; width: 48px; height: 48px; border-radius: 14px;
-            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s;
+            background: white; border: none; width: 44px; height: 44px; border-radius: 12px;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: 0.3s;
             color: var(--text-gray); display: flex; align-items: center; justify-content: center;
         }
-        .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(10deg); }
+        .profile-btn.active { background: var(--text-dark); color: white; transform: scale(1.05); }
+
+        /* Progress Bar Styling */
+        .progress-container { margin-bottom: 2rem; }
+        .progress-header { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: var(--text-gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .progress-bar-bg { width: 100%; height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { 
+            height: 100%; width: 0%; background: var(--primary-gradient); 
+            transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
 
         /* --- ADMIN PANEL --- */
         .admin-controls {
             background: white; padding: 1rem; border-radius: var(--radius-md);
-            margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 12px;
-            border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 10px;
+            border: 1px solid #f1f5f9; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05);
+            animation: slideDown 0.3s ease;
         }
-        .input-wrapper { display: flex; gap: 10px; width: 100%; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .input-wrapper { display: flex; gap: 8px; width: 100%; }
         input[type="text"], input[type="password"] {
-            flex: 1; padding: 14px 16px; border-radius: 12px; border: 2px solid #e2e8f0; outline: none;
-            font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem;
+            flex: 1; padding: 12px 14px; border-radius: 10px; border: 2px solid #e2e8f0; outline: none;
+            font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.95rem; background: #f8fafc; color: var(--text-dark);
+            transition: 0.2s;
         }
+        input:focus { border-color: var(--accent-color); background: white; }
+        
         .btn-add { 
-            width: 50px; height: 50px; flex-shrink: 0; border-radius: 12px; border: none; 
+            width: 48px; height: 48px; flex-shrink: 0; border-radius: 10px; border: none; 
             background: var(--text-dark); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
 
-        .admin-tools { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+        .admin-tools { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
         .btn-sm {
             border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
-            font-size: 0.75rem; padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 6px;
+            font-size: 0.75rem; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; gap: 5px;
         }
 
-        /* --- LIST ITEMS REDESIGN --- */
-        ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+        /* --- LIST DESIGN (Modern, Elegant, Fix Mobile) --- */
+        ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        
         .todo-item {
             background: white; padding: 16px; border-radius: 16px;
-            display: flex; align-items: center; gap: 14px;
-            transition: all 0.3s ease; border: 1px solid transparent;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            display: flex; align-items: center; gap: 14px; /* Gap antar checkbox dan teks */
+            transition: all 0.2s ease; 
+            border: 1px solid rgba(0,0,0,0.03);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            position: relative;
         }
-        .todo-item:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        
+        .todo-item:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.05); }
 
-        /* --- MODERN CHECKBOX --- */
-        .cb-wrapper { position: relative; width: 26px; height: 26px; flex-shrink: 0; } /* Ukuran dikunci */
+        /* CHECKBOX MODERN & FIX LAYOUT MOBILE */
+        .checkbox-wrapper {
+            /* KUNCI UKURAN: flex-shrink 0 agar tidak gepeng di mobile */
+            flex-shrink: 0; 
+            width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
         .custom-checkbox {
-            appearance: none; width: 26px; height: 26px; border: 2.5px solid #cbd5e1;
-            border-radius: 9px; cursor: pointer; transition: all 0.3s ease; background: white;
-            display: block;
+            appearance: none; -webkit-appearance: none;
+            width: 24px; height: 24px;
+            border: 2px solid #cbd5e1; border-radius: 8px;
+            cursor: pointer; position: relative;
+            background-color: transparent;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        /* Style saat dicentang (Checked) */
         .custom-checkbox:checked {
-            background: var(--accent-color); border-color: var(--accent-color);
-            animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            animation: bounceCheck 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .custom-checkbox:checked::after {
-            content: '✔'; position: absolute; color: white; font-size: 14px;
-            top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800;
-        }
-        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
+        /* Icon centang manual menggunakan CSS pseudo-element agar tajam */
+        .custom-checkbox::after {
+            content: ''; position: absolute;
+            left: 7px; top: 3px;
+            width: 6px; height: 12px;
+            border: solid white;
+            border-width: 0 2.5px 2.5px 0;
+            transform: rotate(45deg) scale(0);
+            transition: transform 0.2s ease-in-out;
+        }
+        .custom-checkbox:checked::after { transform: rotate(45deg) scale(1); }
+
+        @keyframes bounceCheck { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
+
+        /* Teks Tugas */
         .task-text { 
-            flex: 1; font-weight: 600; font-size: 1rem; color: var(--text-dark); 
-            transition: all 0.3s ease; line-height: 1.4;
+            flex: 1; font-weight: 500; font-size: 1rem; color: var(--text-dark); 
+            transition: color 0.2s; line-height: 1.5; word-break: break-word;
         }
-        .completed .task-text { color: #94a3b8; text-decoration: line-through; }
-        .completed { background: rgba(255,255,255,0.5); border-color: transparent; }
+        
+        /* State Selesai */
+        .todo-item.completed { background: #f8fafc; box-shadow: none; }
+        .todo-item.completed .task-text { color: #94a3b8; text-decoration: line-through; }
 
-        .item-actions { display: none; gap: 4px; }
+        /* Action Buttons (Fitur 3: Reordering) */
+        .item-actions { display: none; gap: 4px; flex-shrink: 0; }
         .edit-mode-active .item-actions { display: flex; }
+        
         .action-icon {
-            width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            width: 30px; height: 30px; border-radius: 8px; background: #f1f5f9; color: var(--text-gray);
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
         }
+        .action-icon:hover { background: var(--text-dark); color: white; }
+        .icon-del:hover { background: #ef4444; color: white; }
 
         /* --- MODAL --- */
         .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 999;
         }
-        .modal-content { background: white; padding: 2rem; border-radius: 24px; width: 90%; max-width: 380px; text-align: center; }
+        .modal-content { 
+            background: white; padding: 2rem; border-radius: 20px; width: 90%; max-width: 360px; 
+            text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
 
-        .empty-state { text-align: center; padding: 2rem 0; display: none; }
-
+        .empty-state { text-align: center; padding: 3rem 0; display: none; }
+        
+        /* Mobile Tweaks */
         @media (max-width: 480px) {
-            .container { padding: 1.5rem; }
+            .container { padding: 1.5rem; width: 92%; }
             .btn-sm .btn-text { display: none; }
         }
     </style>
@@ -164,58 +208,63 @@
 
     <div id="loginModal" class="modal">
         <div class="modal-content">
-            <h2 style="font-family:'Outfit'">Admin Access</h2>
-            <input type="password" id="passwordInput" placeholder="Password..." style="width:100%; margin: 15px 0;" onkeypress="if(event.key === 'Enter') attemptLogin()">
-            <div id="errorMsg" style="color:#ef4444; font-size: 0.85rem; margin-bottom: 10px; display: none;">Password salah!</div>
+            <h3 style="font-family:'Outfit'; margin-bottom:10px;">Admin Access</h3>
+            <input type="password" id="passwordInput" placeholder="Password..." style="width:100%; margin-bottom:15px;" onkeypress="if(event.key === 'Enter') attemptLogin()">
+            <div id="errorMsg" style="color:#ef4444; font-size: 0.8rem; margin-bottom: 10px; display: none;">Password salah!</div>
             <div style="display:flex; gap:10px;">
-                <button onclick="closeModal()" class="btn" style="flex:1; padding:12px; border-radius:12px; border:none; background:#f1f5f9;">Batal</button>
-                <button onclick="attemptLogin()" class="btn-add" style="flex:1; width:auto; font-weight:bold;">Login</button>
+                <button onclick="closeModal()" class="btn-sm" style="flex:1; justify-content:center; background:#f1f5f9; height:40px;">Batal</button>
+                <button onclick="attemptLogin()" class="btn-sm" style="flex:1; justify-content:center; background:var(--text-dark); color:white; height:40px;">Login</button>
             </div>
         </div>
     </div>
 
     <div class="container" id="mainContainer">
+        
         <div class="login-overlay">
-            <i class="ph-duotone ph-lock-key" style="font-size: 64px; color: var(--accent-color); margin-bottom: 15px;"></i>
+            <i class="ph-duotone ph-lock-key" style="font-size: 56px; color: var(--accent-color); margin-bottom: 15px;"></i>
             <h2 style="font-family:'Outfit'">Yakin kamu Cheva?</h2>
-            <button class="btn-add" style="width:auto; padding:0 25px; margin-top:15px; background:var(--primary-gradient)" onclick="openLogin()">Login Sekarang</button>
+            <button class="btn-sm" style="background:var(--primary-gradient); color:white; padding:12px 24px; margin-top:15px; font-size:0.9rem;" onclick="openLogin()">
+                Login Sekarang
+            </button>
         </div>
 
         <header>
             <div>
-                <div class="brand-title"><span class="brand-highlight">Cheva's</span> <br> To Do List</div>
-                <div id="dateDisplay" style="color:var(--text-gray); font-size: 0.85rem; margin-top: 5px; font-weight: 700;"></div>
+                <div class="brand-title"><span class="brand-highlight">Cheva's</span> List</div>
+                <div id="dateDisplay" style="color:var(--text-gray); font-size: 0.85rem; margin-top: 4px; font-weight: 600;"></div>
             </div>
             <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()">
-                <i class="ph ph-user-focus" style="font-size: 24px;"></i>
+                <i class="ph-bold ph-gear" style="font-size: 20px;"></i>
             </button>
         </header>
 
         <div class="progress-container">
-            <div class="progress-info">
-                <span>Task Progress</span>
+            <div class="progress-header">
+                <span>Progress Harian</span>
                 <span id="progressText">0%</span>
             </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressFill"></div>
             </div>
         </div>
 
         <div class="admin-controls" id="adminPanel">
             <div class="input-wrapper">
-                <input type="text" id="newTaskInput" placeholder="Tulis tugas baru..." onkeypress="if(event.key === 'Enter') addTask()">
+                <input type="text" id="newTaskInput" placeholder="Tulis tugas baru..." autocomplete="off" onkeypress="if(event.key === 'Enter') addTask()">
                 <button class="btn-add" onclick="addTask()"><i class="ph-bold ph-plus"></i></button>
             </div>
             <div class="admin-tools">
                 <button class="btn-sm" style="background:#eff6ff; color:#1d4ed8;" onclick="apiCall('uncheck_all')"><i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="btn-text">Uncheck All</span></button>
-                <button class="btn-sm" style="background:#fef2f2; color:#b91c1c;" onclick="logout()">Logout</button>
+                <button class="btn-sm" style="background:#fffbeb; color:#b45309;" onclick="apiCall('clear_completed')"><i class="ph-bold ph-broom"></i> <span class="btn-text">Clear Done</span></button>
+                <button class="btn-sm" style="background:#fef2f2; color:#b91c1c; margin-left:auto;" onclick="logout()"><i class="ph-bold ph-sign-out"></i></button>
             </div>
         </div>
 
         <ul id="todoList"></ul>
+
         <div class="empty-state" id="emptyState">
-            <i class="ph ph-leaf" style="font-size: 40px; color:#cbd5e1"></i>
-            <p style="color:var(--text-gray); margin-top:10px;">Kosong & rapi!</p>
+            <i class="ph-duotone ph-check-circle" style="font-size: 48px; color:#cbd5e1; margin-bottom:10px;"></i>
+            <p style="color:var(--text-gray); font-weight:500;">Semua tugas beres!</p>
         </div>
     </div>
 
@@ -229,12 +278,19 @@
                 const res = await fetch('/api/api.php?action=get_all');
                 const json = await res.json();
                 tasks = json.data || [];
-                isLoggedIn = json.status !== 'locked';
-                document.body.classList.toggle('mode-teaser', !isLoggedIn);
+                
+                if (json.status !== 'locked') {
+                    isLoggedIn = true;
+                    document.body.classList.remove('mode-teaser');
+                } else {
+                    isLoggedIn = false;
+                    document.body.classList.add('mode-teaser');
+                }
                 render();
             } catch (e) { console.error(e); }
         }
 
+        // --- LOGIC UI & PROGRESS BAR ---
         function updateProgress() {
             if (tasks.length === 0) {
                 document.getElementById('progressFill').style.width = '0%';
@@ -251,11 +307,15 @@
             const listEl = document.getElementById('todoList');
             const emptyState = document.getElementById('emptyState');
             
+            // Date
             document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            // Toggle UI
             document.getElementById('adminPanel').style.display = (isLoggedIn && isEditMode) ? 'flex' : 'none';
             document.getElementById('profileBtn').classList.toggle('active', isEditMode);
             document.getElementById('mainContainer').classList.toggle('edit-mode-active', isEditMode);
 
+            // Render List
             listEl.innerHTML = '';
             if (tasks.length === 0) {
                 emptyState.style.display = 'block';
@@ -264,16 +324,20 @@
                 tasks.forEach((t, i) => {
                     const li = document.createElement('li');
                     li.className = `todo-item ${t.is_completed ? 'completed' : ''}`;
+                    // ID ditambahkan ke element checkbox agar bisa dimanipulasi instan
                     li.innerHTML = `
-                        <div class="cb-wrapper">
-                            <input type="checkbox" class="custom-checkbox" ${t.is_completed ? 'checked' : ''} 
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" class="custom-checkbox" 
+                                ${t.is_completed ? 'checked' : ''} 
                                 onchange="toggleTaskInstant(${t.id}, this)">
                         </div>
+                        
                         <span class="task-text">${t.task_name}</span>
+                        
                         <div class="item-actions">
                             <div class="action-icon" onclick="move(${i}, -1)"><i class="ph-bold ph-caret-up"></i></div>
                             <div class="action-icon" onclick="move(${i}, 1)"><i class="ph-bold ph-caret-down"></i></div>
-                            <div class="action-icon" style="color:#ef4444" onclick="deleteTask(${t.id})"><i class="ph-bold ph-trash"></i></div>
+                            <div class="action-icon icon-del" onclick="deleteTask(${t.id})"><i class="ph-bold ph-trash"></i></div>
                         </div>
                     `;
                     listEl.appendChild(li);
@@ -282,55 +346,76 @@
             updateProgress();
         }
 
-        // --- OPTIMISTIC UI (NO REFRESH) ---
+        // --- OPTIMISTIC UI (NO REFRESH - FITUR UTAMA) ---
         async function toggleTaskInstant(id, el) {
             const isChecked = el.checked;
             const item = el.closest('.todo-item');
             
-            // Ubah tampilan secara instan
-            item.classList.toggle('completed', isChecked);
+            // 1. Update Tampilan Langsung (Tanpa Loading)
+            if(isChecked) {
+                item.classList.add('completed');
+            } else {
+                item.classList.remove('completed');
+            }
+
+            // 2. Update Data Lokal untuk Progress Bar
             const taskIndex = tasks.findIndex(t => t.id == id);
-            if(taskIndex !== -1) tasks[taskIndex].is_completed = isChecked;
+            if(taskIndex !== -1) {
+                tasks[taskIndex].is_completed = isChecked ? 1 : 0; // Sesuaikan format data
+            }
             updateProgress();
 
-            // Kirim ke server di background
+            // 3. Kirim ke Server di Background
             try {
                 await fetch(`/api/api.php?action=toggle`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({id})
                 });
+                // Kita tidak panggil init() agar tidak re-render/refresh layout
             } catch (e) { 
-                // Jika gagal, kembalikan tampilan
+                // Jika error (koneksi putus), kembalikan tampilan ke semula
                 el.checked = !isChecked;
                 item.classList.toggle('completed', !isChecked);
-                init(); 
+                console.error("Gagal sync ke server");
             }
         }
 
+        // --- FUNGSI STANDAR LAINNYA ---
         async function apiCall(action, data = {}) {
             await fetch(`/api/api.php?action=${action}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             });
-            init();
+            init(); // Untuk add/delete/swap kita tetap refresh data agar urutan benar
         }
 
         function addTask() {
             const input = document.getElementById('newTaskInput');
-            if(input.value.trim()) { apiCall('add', {task: input.value.trim()}); input.value = ''; }
+            if(input.value.trim()) { 
+                apiCall('add', {task: input.value.trim()}); 
+                input.value = ''; 
+            }
         }
 
-        function deleteTask(id) { if(confirm("Hapus tugas?")) apiCall('delete', {id}); }
+        function deleteTask(id) { if(confirm("Hapus?")) apiCall('delete', {id}); }
 
         function move(idx, dir) {
-            const t1 = tasks[idx], t2 = tasks[idx+dir];
+            const t1 = tasks[idx];
+            const t2 = tasks[idx+dir];
             if(t2) apiCall('swap', {id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order});
         }
 
-        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
+        // --- LOGIN SYSTEM ---
+        function openLogin() { 
+            document.getElementById('loginModal').style.display = 'flex'; 
+            setTimeout(() => document.getElementById('passwordInput').focus(), 100);
+        }
+        function closeModal() { 
+            document.getElementById('loginModal').style.display = 'none'; 
+            document.getElementById('errorMsg').style.display = 'none';
+        }
 
         async function attemptLogin() {
             const pass = document.getElementById('passwordInput').value;
