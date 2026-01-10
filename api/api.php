@@ -58,24 +58,17 @@ function getTasks() {
     $tasksJson = redisCommand('GET', ['tasks']);
     
     if (!$tasksJson || $tasksJson === '') {
-        // Initialize dengan data default
         $defaultTasks = [
             ['id' => 1, 'task_name' => 'Selamat datang di Cheva\'s To Do List!', 'list_order' => 1, 'is_completed' => false],
-            ['id' => 2, 'task_name' => 'Login sebagai admin untuk mengedit list', 'list_order' => 2, 'is_completed' => false],
-            ['id' => 3, 'task_name' => 'Password: admin123', 'list_order' => 3, 'is_completed' => false]
+            ['id' => 2, 'task_name' => 'Gunakan panel admin untuk menambah list', 'list_order' => 2, 'is_completed' => false]
         ];
         saveTasks($defaultTasks);
         return $defaultTasks;
     }
     
     $tasks = json_decode($tasksJson, true);
+    if (!is_array($tasks)) $tasks = [];
     
-    // Validasi tasks adalah array
-    if (!is_array($tasks)) {
-        $tasks = [];
-    }
-    
-    // Sort by list_order untuk consistency
     usort($tasks, function($a, $b) {
         $orderA = isset($a['list_order']) ? (int)$a['list_order'] : 0;
         $orderB = isset($b['list_order']) ? (int)$b['list_order'] : 0;
@@ -89,7 +82,6 @@ function getTasks() {
 function saveTasks($tasks) {
     $json = json_encode($tasks);
     $result = redisCommand('SET', ['tasks', $json]);
-    error_log("Saving tasks: " . $json);
     return $result;
 }
 
@@ -102,11 +94,7 @@ function getNextId($tasks) {
 
 $action = $_GET['action'] ?? '';
 $raw = file_get_contents('php://input');
-$input = json_decode($raw, true);
-
-if (!is_array($input)) {
-    $input = [];
-}
+$input = json_decode($raw, true) ?? [];
 
 $ADMIN_PASS = 'cepaimut';
 
@@ -119,48 +107,38 @@ function debugLog($action, $data = []) {
 }
 
 switch ($action) {
-
     case 'get_all':
-        try {
-            $tasks = getTasks();
-            debugLog('get_all', ['count' => count($tasks), 'isAdmin' => isAdmin()]);
-            
+        // Proteksi: Jika belum login, jangan kirim data task
+        if (!isset($_SESSION['logged_in'])) {
             echo json_encode([
-                'status' => 'success',
-                'data' => $tasks,
-                'isAdmin' => isAdmin()
+                'status' => 'locked',
+                'message' => 'Login required',
+                'isAdmin' => false
             ]);
-        } catch (Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            exit;
         }
+
+        $tasks = getTasks();
+        echo json_encode([
+            'status' => 'success',
+            'data' => $tasks,
+            'isAdmin' => isAdmin()
+        ]);
         break;
 
     case 'login':
         $password = $input['password'] ?? '';
-        
-        debugLog('login_attempt', ['password_length' => strlen($password)]);
-        
         if ($password === $ADMIN_PASS) {
+            $_SESSION['logged_in'] = true;
             $_SESSION['is_admin'] = true;
             session_regenerate_id(true);
-            
-            debugLog('login_success', ['session_id' => session_id()]);
-            
-            echo json_encode([
-                'status' => 'success',
-                'message' => 'Login successful',
-                'isAdmin' => true
-            ]);
+            echo json_encode(['status' => 'success', 'isAdmin' => true]);
         } else {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Password salah'
-            ]);
+            echo json_encode(['status' => 'error', 'message' => 'Password salah']);
         }
         break;
 
     case 'logout':
-        debugLog('logout', ['before' => $_SESSION]);
         $_SESSION = [];
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
@@ -174,218 +152,84 @@ switch ($action) {
         break;
 
     case 'add':
-        if (!isAdmin()) {
-            echo json_encode(['status' => 'error', 'message' => 'Unauthorized - Please login as admin']);
-            exit;
-        }
-        
-        try {
-            $taskName = trim($input['task'] ?? '');
-            debugLog('add', ['task_name' => $taskName]);
-            
-            if (empty($taskName)) {
-                echo json_encode(['status' => 'error', 'message' => 'Task name cannot be empty']);
-                exit;
-            }
-            
-            $tasks = getTasks();
-            $maxOrder = 0;
-            
-            foreach ($tasks as $task) {
-                if (isset($task['list_order']) && $task['list_order'] > $maxOrder) {
-                    $maxOrder = $task['list_order'];
-                }
-            }
-            
-            $newTask = [
-                'id' => getNextId($tasks),
-                'task_name' => $taskName,
-                'list_order' => $maxOrder + 1,
-                'is_completed' => false
-            ];
-            
-            $tasks[] = $newTask;
-            $saveResult = saveTasks($tasks);
-            
-            debugLog('add_result', ['new_task' => $newTask, 'save_result' => $saveResult]);
-            
-            echo json_encode(['status' => 'success', 'message' => 'Task added', 'task' => $newTask]);
-        } catch (Exception $e) {
-            debugLog('add_error', ['error' => $e->getMessage()]);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
+        if (!isAdmin()) { echo json_encode(['status' => 'error', 'message' => 'Unauthorized']); exit; }
+        $taskName = trim($input['task'] ?? '');
+        if (empty($taskName)) { echo json_encode(['status' => 'error', 'message' => 'Empty task']); exit; }
+        $tasks = getTasks();
+        $maxOrder = empty($tasks) ? 0 : max(array_column($tasks, 'list_order'));
+        $newTask = [
+            'id' => getNextId($tasks),
+            'task_name' => $taskName,
+            'list_order' => $maxOrder + 1,
+            'is_completed' => false
+        ];
+        $tasks[] = $newTask;
+        saveTasks($tasks);
+        echo json_encode(['status' => 'success', 'task' => $newTask]);
         break;
 
     case 'toggle':
-        try {
-            $id = isset($input['id']) ? (int)$input['id'] : 0;
-            debugLog('toggle', ['id' => $id]);
-            
-            $tasks = getTasks();
-            $found = false;
-            
-            for ($i = 0; $i < count($tasks); $i++) {
-                if (isset($tasks[$i]['id']) && (int)$tasks[$i]['id'] === $id) {
-                    $tasks[$i]['is_completed'] = !($tasks[$i]['is_completed'] ?? false);
-                    $found = true;
-                    debugLog('toggle_found', ['task' => $tasks[$i]]);
-                    break;
-                }
+        // Toggle bisa dilakukan siapa saja yang sudah login (sesuai permintaan alur login di depan)
+        if (!isset($_SESSION['logged_in'])) { echo json_encode(['status' => 'error']); exit; }
+        $id = (int)($input['id'] ?? 0);
+        $tasks = getTasks();
+        for ($i = 0; $i < count($tasks); $i++) {
+            if ((int)$tasks[$i]['id'] === $id) {
+                $tasks[$i]['is_completed'] = !($tasks[$i]['is_completed'] ?? false);
+                saveTasks($tasks);
+                echo json_encode(['status' => 'success']);
+                exit;
             }
-            
-            if ($found) {
-                $saveResult = saveTasks($tasks);
-                debugLog('toggle_saved', ['save_result' => $saveResult]);
-                echo json_encode(['status' => 'success', 'message' => 'Task toggled']);
-            } else {
-                debugLog('toggle_not_found', ['id' => $id, 'tasks_count' => count($tasks)]);
-                echo json_encode(['status' => 'error', 'message' => 'Task not found']);
-            }
-        } catch (Exception $e) {
-            debugLog('toggle_error', ['error' => $e->getMessage()]);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
+        echo json_encode(['status' => 'error', 'message' => 'Not found']);
         break;
 
     case 'delete':
-        if (!isAdmin()) {
-            echo json_encode(['status' => 'error', 'message' => 'Unauthorized - Please login as admin']);
-            exit;
-        }
-        
-        try {
-            $id = isset($input['id']) ? (int)$input['id'] : 0;
-            debugLog('delete', ['id' => $id]);
-            
-            $tasks = getTasks();
-            $newTasks = [];
-            
-            foreach ($tasks as $task) {
-                if (isset($task['id']) && (int)$task['id'] !== $id) {
-                    $newTasks[] = $task;
-                }
-            }
-            
-            $saveResult = saveTasks($newTasks);
-            debugLog('delete_result', ['before' => count($tasks), 'after' => count($newTasks), 'save_result' => $saveResult]);
-            
-            echo json_encode(['status' => 'success', 'message' => 'Task deleted']);
-        } catch (Exception $e) {
-            debugLog('delete_error', ['error' => $e->getMessage()]);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
+        if (!isAdmin()) { echo json_encode(['status' => 'error']); exit; }
+        $id = (int)($input['id'] ?? 0);
+        $tasks = getTasks();
+        $tasks = array_values(array_filter($tasks, function($t) use ($id) { return (int)$t['id'] !== $id; }));
+        saveTasks($tasks);
+        echo json_encode(['status' => 'success']);
         break;
 
     case 'reset':
-        if (!isAdmin()) {
-            echo json_encode(['status' => 'error', 'message' => 'Unauthorized - Please login as admin']);
-            exit;
-        }
-        
-        try {
-            debugLog('reset', []);
-            $tasks = [
-                ['id' => 1, 'task_name' => 'List telah direset oleh Admin', 'list_order' => 1, 'is_completed' => false]
-            ];
-            $saveResult = saveTasks($tasks);
-            debugLog('reset_result', ['save_result' => $saveResult]);
-            
-            echo json_encode(['status' => 'success', 'message' => 'List reset']);
-        } catch (Exception $e) {
-            debugLog('reset_error', ['error' => $e->getMessage()]);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
+        if (!isAdmin()) { echo json_encode(['status' => 'error']); exit; }
+        $tasks = [['id' => 1, 'task_name' => 'List telah direset oleh Admin', 'list_order' => 1, 'is_completed' => false]];
+        saveTasks($tasks);
+        echo json_encode(['status' => 'success']);
         break;
 
     case 'clear_completed':
-        if (!isAdmin()) {
-            echo json_encode(['status' => 'error', 'message' => 'Unauthorized - Please login as admin']);
-            exit;
-        }
-        
-        try {
-            debugLog('clear_completed', []);
-            $tasks = getTasks();
-            $newTasks = [];
-            
-            foreach ($tasks as $task) {
-                if (!($task['is_completed'] ?? false)) {
-                    $newTasks[] = $task;
-                }
-            }
-            
-            $saveResult = saveTasks($newTasks);
-            debugLog('clear_completed_result', ['before' => count($tasks), 'after' => count($newTasks), 'save_result' => $saveResult]);
-            
-            echo json_encode(['status' => 'success', 'message' => 'Completed tasks cleared']);
-        } catch (Exception $e) {
-            debugLog('clear_completed_error', ['error' => $e->getMessage()]);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
+        if (!isAdmin()) { echo json_encode(['status' => 'error']); exit; }
+        $tasks = array_values(array_filter(getTasks(), function($t) { return !($t['is_completed'] ?? false); }));
+        saveTasks($tasks);
+        echo json_encode(['status' => 'success']);
         break;
 
     case 'uncheck_all':
-        if (!isAdmin()) {
-            echo json_encode(['status' => 'error', 'message' => 'Unauthorized - Please login as admin']);
-            exit;
-        }
-        
-        try {
-            debugLog('uncheck_all', []);
-            $tasks = getTasks();
-            
-            for ($i = 0; $i < count($tasks); $i++) {
-                $tasks[$i]['is_completed'] = false;
-            }
-            
-            $saveResult = saveTasks($tasks);
-            debugLog('uncheck_all_result', ['save_result' => $saveResult]);
-            
-            echo json_encode(['status' => 'success', 'message' => 'All tasks unchecked']);
-        } catch (Exception $e) {
-            debugLog('uncheck_all_error', ['error' => $e->getMessage()]);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
+        if (!isAdmin()) { echo json_encode(['status' => 'error']); exit; }
+        $tasks = getTasks();
+        for ($i = 0; $i < count($tasks); $i++) { $tasks[$i]['is_completed'] = false; }
+        saveTasks($tasks);
+        echo json_encode(['status' => 'success']);
         break;
 
     case 'swap':
-        if (!isAdmin()) {
-            echo json_encode(['status' => 'error', 'message' => 'Unauthorized - Please login as admin']);
-            exit;
+        if (!isAdmin()) { echo json_encode(['status' => 'error']); exit; }
+        $id1 = (int)$input['id1']; $id2 = (int)$input['id2'];
+        $order1 = (int)$input['order1']; $order2 = (int)$input['order2'];
+        $tasks = getTasks();
+        foreach ($tasks as &$t) {
+            if ((int)$t['id'] === $id1) $t['list_order'] = $order2;
+            else if ((int)$t['id'] === $id2) $t['list_order'] = $order1;
         }
-        
-        try {
-            $id1 = isset($input['id1']) ? (int)$input['id1'] : 0;
-            $id2 = isset($input['id2']) ? (int)$input['id2'] : 0;
-            $order1 = isset($input['order1']) ? (int)$input['order1'] : 0;
-            $order2 = isset($input['order2']) ? (int)$input['order2'] : 0;
-            
-            debugLog('swap', ['id1' => $id1, 'id2' => $id2, 'order1' => $order1, 'order2' => $order2]);
-            
-            $tasks = getTasks();
-            
-            for ($i = 0; $i < count($tasks); $i++) {
-                if (isset($tasks[$i]['id'])) {
-                    if ((int)$tasks[$i]['id'] === $id1) {
-                        $tasks[$i]['list_order'] = $order2;
-                    } else if ((int)$tasks[$i]['id'] === $id2) {
-                        $tasks[$i]['list_order'] = $order1;
-                    }
-                }
-            }
-            
-            $saveResult = saveTasks($tasks);
-            debugLog('swap_result', ['save_result' => $saveResult]);
-            
-            echo json_encode(['status' => 'success', 'message' => 'Tasks swapped']);
-        } catch (Exception $e) {
-            debugLog('swap_error', ['error' => $e->getMessage()]);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
+        saveTasks($tasks);
+        echo json_encode(['status' => 'success']);
         break;
 
     default:
-        echo json_encode(['status' => 'error', 'message' => 'Invalid action: ' . $action]);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
         break;
 }
 ?>
