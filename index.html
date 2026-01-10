@@ -16,7 +16,7 @@
         :root {
             --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
             --accent-color: #8B5CF6;
-            --glass-bg: rgba(255, 255, 255, 0.85); /* Sedikit lebih solid agar kontras lebih baik di PC */
+            --glass-bg: rgba(255, 255, 255, 0.75); /* Sedikit lebih transparan agar list menonjol */
             --glass-border: rgba(255, 255, 255, 0.8);
             --glass-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
             --text-dark: #1e293b;
@@ -31,10 +31,8 @@
             background-color: #f3f4f6;
             color: var(--text-dark);
             min-height: 100vh;
-            display: flex; justify-content: center; align-items: flex-start; /* Ubah ke flex-start agar bisa discroll jika panjang */
+            display: flex; justify-content: center; align-items: flex-start;
             overflow-x: hidden; position: relative;
-            
-            /* PERBAIKAN: Memberi jarak (padding) agar container tidak nempel layar atas/bawah */
             padding-top: 60px; 
             padding-bottom: 60px;
         }
@@ -48,7 +46,7 @@
         /* --- 3. CONTAINER UTAMA --- */
         .container {
             width: 90%; 
-            max-width: 500px; /* Ukuran ideal untuk ToDo List di PC */
+            max-width: 500px;
             background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
             box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative; transition: 0.5s;
@@ -91,81 +89,145 @@
         }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* PERBAIKAN: Input Wrapper agar tombol tidak hilang */
         .input-wrapper { display: flex; gap: 10px; width: 100%; align-items: center; }
         
-        /* PERBAIKAN: Input mengambil sisa space (flex: 1) tapi punya min-width agar tidak error */
         input[type="text"], input[type="password"] {
-            flex: 1; /* Mengisi ruang kosong */
-            min-width: 0; /* Mencegah overflow */
+            flex: 1; min-width: 0;
             padding: 14px 16px; border-radius: 12px;
             border: 2px solid #e2e8f0; outline: none; background: #f8fafc;
             font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem;
         }
         input:focus { border-color: var(--accent-color); background: white; }
 
-        /* Tombol Add tidak boleh mengecil (flex-shrink: 0) */
         .btn-add { 
-            flex-shrink: 0; 
-            width: 50px; height: 50px; 
+            flex-shrink: 0; width: 50px; height: 50px; 
             border-radius: 12px; border: none; background: var(--text-dark); color: white; cursor: pointer;
             display: flex; align-items: center; justify-content: center; font-size: 20px;
         }
         .btn-add:hover { background: black; }
 
-        /* --- BUTTONS TOOLS --- */
-        .admin-tools { 
-            display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; /* Tombol akan turun baris jika sempit */
-        }
+        .admin-tools { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
         .btn-sm {
             border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
             font-size: 0.85rem; padding: 10px 14px; border-radius: 10px;
             display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: 0.2s;
         }
         .btn-sm:active { transform: scale(0.95); }
-        
         .btn-uncheck { background: #eff6ff; color: #1d4ed8; }
         .btn-clear { background: #fffbeb; color: #b45309; } 
         .btn-reset { background: #fef2f2; color: #b91c1c; }
-        .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; margin-left: auto; } /* Logout dikanan */
+        .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; margin-left: auto; }
 
         .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 24px; font-size: 1rem;}
         .btn-primary { background: var(--primary-gradient); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
 
-        /* --- LIST ITEMS --- */
-        ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-        .todo-item {
-            background: rgba(255, 255, 255, 0.7); border: 1px solid white;
-            padding: 16px; border-radius: 16px; display: flex; align-items: center; transition: 0.3s;
-            position: relative; gap: 12px;
+        /* --- [REDESIGN] LIST ITEMS --- */
+        /* Menambahkan gap yang lebih besar agar terlihat terpisah */
+        ul { 
+            list-style: none; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+            padding-bottom: 20px;
         }
-        .todo-item:hover { background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .todo-item.completed { opacity: 0.6; background: rgba(255,255,255,0.4); }
-        .todo-item.completed .task-text { text-decoration: line-through; color: #94a3b8; }
+
+        .todo-item {
+            /* Styling dasar Card */
+            background: rgba(255, 255, 255, 0.85); /* Lebih solid */
+            backdrop-filter: blur(10px);
+            border: 1px solid white;
+            padding: 18px 20px; /* Padding sedikit lebih besar */
+            border-radius: 18px; 
+            
+            /* Layout */
+            display: flex; 
+            align-items: center; 
+            gap: 16px;
+            position: relative;
+            
+            /* Visual Depth & Separation */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02), 0 10px 15px -3px rgba(0,0,0,0.03);
+            border-left: 5px solid transparent; /* Persiapan untuk hover effect */
+            
+            /* Animation Transition */
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: slideInUp 0.5s ease backwards;
+        }
+
+        /* Staggering Animation (Efek muncul bergantian tanpa JS kompleks) */
+        .todo-item:nth-child(1) { animation-delay: 0.05s; }
+        .todo-item:nth-child(2) { animation-delay: 0.1s; }
+        .todo-item:nth-child(3) { animation-delay: 0.15s; }
+        .todo-item:nth-child(4) { animation-delay: 0.2s; }
+        .todo-item:nth-child(5) { animation-delay: 0.25s; }
+
+        /* Hover Effect: Lift Up & Glow */
+        .todo-item:hover {
+            transform: translateY(-4px) scale(1.01);
+            background: #ffffff;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            border-left-color: var(--accent-color); /* Aksen warna muncul di kiri */
+        }
+
+        /* Completed State */
+        .todo-item.completed { 
+            opacity: 0.7; 
+            background: rgba(241, 245, 249, 0.6);
+            box-shadow: none;
+            transform: scale(0.98);
+            border: 1px solid transparent;
+        }
+        .todo-item.completed .task-text { 
+            text-decoration: line-through; 
+            color: #94a3b8; 
+            font-style: italic;
+        }
+
+        /* Keyframes untuk animasi masuk */
+        @keyframes slideInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
         
         /* Checkbox Custom */
         .custom-checkbox {
             appearance: none; width: 24px; height: 24px; flex-shrink: 0;
             border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer;
-            display: grid; place-content: center; transition: 0.2s;
+            display: grid; place-content: center; transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background: #fff;
         }
-        .custom-checkbox:checked { background: var(--accent-color); border-color: var(--accent-color); }
+        .custom-checkbox:hover { border-color: var(--accent-color); }
+        .custom-checkbox:checked { 
+            background: var(--accent-color); 
+            border-color: var(--accent-color); 
+            transform: scale(1.1);
+        }
         .custom-checkbox:checked::after { content: '✔'; color: white; font-size: 14px; font-weight: bold; }
 
-        .task-text { flex-grow: 1; font-weight: 500; font-size: 1rem; line-height: 1.5; word-break: break-word; }
+        .task-text { 
+            flex-grow: 1; font-weight: 600; font-size: 1.05rem; 
+            line-height: 1.5; word-break: break-word; color: var(--text-dark);
+            transition: color 0.3s;
+        }
 
         /* Action Icons (Muncul saat Edit Mode) */
-        .item-actions { display: none; gap: 4px; flex-shrink: 0; }
-        .edit-mode-active .item-actions { display: flex; }
+        .item-actions { display: none; gap: 6px; flex-shrink: 0; }
+        .edit-mode-active .item-actions { display: flex; animation: fadeIn 0.3s; }
         
         .action-icon {
             width: 32px; height: 32px; border-radius: 8px; 
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: 0.2s; background: rgba(0,0,0,0.03); color: var(--text-gray);
+            transition: 0.2s; background: #f1f5f9; color: var(--text-gray);
         }
-        .action-icon:hover { background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .action-icon:hover { background: var(--text-dark); color: white; transform: translateY(-2px); }
         .icon-del { color: #ef4444; background: #fef2f2; }
-        .icon-del:hover { background: #fee2e2; }
+        .icon-del:hover { background: #ef4444; color: white; }
 
         /* MODAL */
         .modal {
@@ -188,22 +250,20 @@
         @media (max-width: 480px) {
             .container { padding: 1.5rem; width: 92%; }
             .brand-title { font-size: 1.75rem; }
-            
-            /* Sembunyikan Text Tombol Admin di Layar Sempit */
             .btn-sm .btn-text { display: none; }
-            .btn-sm { padding: 12px; justify-content: center; } /* Padding lebih besar untuk jari */
-            .btn-sm i { font-size: 20px; } /* Icon lebih besar */
-            
-            /* Tombol logout tetap terlihat textnya jika muat, atau icon saja */
+            .btn-sm { padding: 12px; justify-content: center; }
+            .btn-sm i { font-size: 20px; }
             .admin-tools { gap: 6px; justify-content: space-between; }
-            .btn-sm { flex: 1; } /* Tombol rata lebar */
+            .btn-sm { flex: 1; }
+            input[type="text"] { font-size: 16px; }
             
-            /* Input Task Font Size */
-            input[type="text"] { font-size: 16px; } /* Mencegah zoom otomatis di iOS */
+            /* Penyesuaian padding item di mobile */
+            .todo-item { padding: 14px 16px; border-radius: 14px; gap: 12px; }
         }
     </style>
 </head>
-<body class="mode-teaser"> <div class="bg-blob blob-1"></div>
+<body class="mode-teaser"> 
+    <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
 
     <div id="loginModal" class="modal">
@@ -333,6 +393,12 @@
                 tasks.forEach((t, i) => {
                     const li = document.createElement('li');
                     li.className = `todo-item ${t.is_completed ? 'completed' : ''}`;
+                    // Menambahkan delay animasi via inline style jika item banyak
+                    // agar tetap staggered meskipun lebih dari 5 item
+                    if(i > 4) {
+                        li.style.animationDelay = `${i * 0.05}s`;
+                    }
+                    
                     li.innerHTML = `
                         <input type="checkbox" class="custom-checkbox" 
                             ${t.is_completed ? 'checked' : ''} 
@@ -408,6 +474,7 @@
         }
 
         async function apiCall(action, data = {}) {
+            // Optimistic Update untuk UX yang cepat (opsional), tapi agar aman kita reload setelah fetch
             await fetch(`/api/api.php?action=${action}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
