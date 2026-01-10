@@ -1,441 +1,177 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cheva's To Do List</title>
+<style>
+    /* --- 1. CORE VARIABLES & RESET --- */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        --accent-color: #8B5CF6;
+        --glass-bg: rgba(255, 255, 255, 0.75);
+        --glass-border: rgba(255, 255, 255, 0.6);
+        --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        --text-dark: #1e293b;
+        --text-gray: #64748b;
+        --radius-xl: 24px;
+        --radius-md: 16px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #f3f4f6;
+        color: var(--text-dark);
+        min-height: 100vh;
+        display: flex; justify-content: center; align-items: center;
+        overflow-x: hidden; position: relative;
+        /* PERBAIKAN: Menambahkan padding vertikal pada body agar container tidak menempel ke atas/bawah layar di semua device */
+        padding: 40px 0; 
+    }
+
+    /* --- 2. BACKGROUND BLOBS --- */
+    .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.6; animation: floatBlob 10s infinite alternate; }
+    .blob-1 { width: 400px; height: 400px; background: #c084fc; top: -100px; left: -100px; }
+    .blob-2 { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; right: -50px; animation-delay: -5s; }
+    @keyframes floatBlob { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
+
+    /* --- 3. CONTAINER UTAMA --- */
+    .container {
+        width: 90%; max-width: 550px;
+        background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+        box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative; transition: 0.5s;
+        /* PERBAIKAN: Menghapus margin lama dan memastikan ada jarak di bawah */
+        margin-bottom: 2rem; 
+    }
+
+    /* TEASER MODE (BLUR EFFECT) */
+    .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .empty-state { 
+        filter: blur(8px); pointer-events: none; user-select: none; 
+    }
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    .login-overlay {
+        position: absolute; inset: 0; z-index: 100;
+        display: none; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; padding: 20px; border-radius: var(--radius-xl);
+    }
+    .mode-teaser .login-overlay { display: flex; }
+    .login-overlay h2 { font-family: 'Outfit'; font-size: 1.5rem; margin-bottom: 1rem; color: var(--text-dark); line-height: 1.4; }
+
+    /* HEADER */
+    /* PERBAIKAN: Menambah jarak bawah header agar tidak terlalu dekat dengan konten */
+    header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; }
+    .brand-title { font-family: 'Outfit'; font-size: 2rem; font-weight: 800; line-height: 1.1; }
+    .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    .profile-btn {
+        background: white; border: none; width: 48px; height: 48px; border-radius: 14px;
+        cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s;
+        color: var(--text-gray); display: flex; align-items: center; justify-content: center;
+    }
+    .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(10deg); box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3); }
+
+    /* ADMIN PANEL & INPUTS */
+    .admin-controls {
+        background: white; padding: 1.2rem; border-radius: var(--radius-md);
+        margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 12px;
+        animation: slideDown 0.3s ease-out; border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .input-wrapper { display: flex; gap: 10px; }
     
-    <style>
-        /* --- 1. CORE VARIABLES & RESET --- */
-        :root {
-            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            --accent-color: #8B5CF6;
-            --glass-bg: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.6);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-            --text-dark: #1e293b;
-            --text-gray: #64748b;
-            --radius-xl: 24px;
-            --radius-md: 16px;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f3f4f6;
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex; justify-content: center; align-items: center;
-            overflow-x: hidden; position: relative;
-        }
+    /* PERBAIKAN PENTING UNTUK PC & MOBILE */
+    input[type="text"], input[type="password"] {
+        /* Menggunakan flex: 1 agar input mengisi ruang yang tersedia, bukan width: 100% yang memaksanya melebar */
+        flex: 1; 
+        padding: 14px 16px; border-radius: 12px;
+        border: 2px solid #e2e8f0; outline: none; background: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        min-width: 0; /* Mencegah input keluar dari container flex pada layar sempit */
+    }
+    input:focus { border-color: var(--accent-color); background: white; }
 
-        /* --- 2. BACKGROUND BLOBS --- */
-        .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.6; animation: floatBlob 10s infinite alternate; }
-        .blob-1 { width: 400px; height: 400px; background: #c084fc; top: -100px; left: -100px; }
-        .blob-2 { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; right: -50px; animation-delay: -5s; }
-        @keyframes floatBlob { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
+    /* BUTTONS */
+    .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;}
+    .btn-primary { background: var(--primary-gradient); color: white; }
+    .btn-add { background: var(--text-dark); color: white; min-width: 50px; }
+    .btn-add:hover { background: black; transform: scale(1.05); }
 
-        /* --- 3. CONTAINER UTAMA --- */
-        .container {
-            width: 90%; max-width: 550px;
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative; transition: 0.5s;
-        }
+    /* ADMIN TOOL BUTTONS */
+    .admin-tools { 
+        display: flex; gap: 8px; justify-content: flex-end; margin-top: 5px; 
+        flex-wrap: wrap; /* Agar tombol turun ke bawah di HP jika tidak muat */
+    }
+    .btn-sm {
+        font-size: 0.8rem; padding: 8px 12px; border-radius: 8px;
+        display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .btn-uncheck { background: #dbeafe; color: #1e40af; } /* Biru */
+    .btn-clear { background: #fef3c7; color: #92400e; }   /* Kuning */
+    .btn-reset { background: #fee2e2; color: #991b1b; }   /* Merah */
+    .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; } /* Abu */
 
-        /* TEASER MODE (BLUR EFFECT) */
-        .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .empty-state { 
-            filter: blur(8px); pointer-events: none; user-select: none; 
-        }
+    /* LIST ITEMS */
+    ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .todo-item {
+        background: rgba(255, 255, 255, 0.6); border: 1px solid white;
+        padding: 16px; border-radius: 16px; display: flex; align-items: center; transition: 0.3s;
+        position: relative;
+    }
+    .todo-item:hover { background: rgba(255, 255, 255, 0.9); transform: translateX(2px); }
+    .todo-item.completed { opacity: 0.7; background: rgba(255,255,255,0.4); }
+    .todo-item.completed .task-text { text-decoration: line-through; color: #94a3b8; }
+    
+    .custom-checkbox {
+        appearance: none; width: 24px; height: 24px;
+        border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; /* Mencegah checkbox mengecil */
+    }
+    .custom-checkbox:checked { background: var(--accent-color); border-color: var(--accent-color); }
+    .custom-checkbox:checked::after { content: '✔'; color: white; font-size: 14px; font-weight: bold; }
+
+    .task-text { flex-grow: 1; font-weight: 500; padding: 0 15px; font-size: 1rem; }
+
+    /* ACTION ICONS */
+    .item-actions { display: none; gap: 4px; flex-shrink: 0; /* Mencegah icon mengecil */ }
+    .edit-mode-active .item-actions { display: flex; }
+    
+    .action-icon {
+        width: 32px; height: 32px; border-radius: 8px; 
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        transition: 0.2s; background: rgba(0,0,0,0.03);
+    }
+    .action-icon:hover { transform: scale(1.1); }
+    .icon-up { color: #3b82f6; } .icon-down { color: #8b5cf6; } .icon-del { color: #ef4444; }
+
+    /* MODAL */
+    .modal {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
+        display: none; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-content { 
+        background: white; padding: 2.5rem; border-radius: 24px; width: 90%; max-width: 400px; 
+        text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+    .pass-container { position: relative; margin: 15px 0; }
+    .pass-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); font-size: 20px; }
+
+    .empty-state { text-align: center; padding: 3rem 0; color: var(--text-gray); display: none; }
+
+    /* --- MOBILE RESPONSIVE TWEAKS --- */
+    @media (max-width: 640px) {
+        /* PERBAIKAN: Padding container lebih kecil di mobile, dan margin eksplisit dihilangkan karena sudah ada padding body */
+        .container { padding: 1.5rem; width: 95%; margin: 0; }
+        .brand-title { font-size: 1.75rem; }
         
-        .login-overlay {
-            position: absolute; inset: 0; z-index: 100;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; padding: 20px; border-radius: var(--radius-xl);
-        }
-        .mode-teaser .login-overlay { display: flex; }
-        .login-overlay h2 { font-family: 'Outfit'; font-size: 1.5rem; margin-bottom: 1rem; color: var(--text-dark); line-height: 1.4; }
-
-        /* HEADER */
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
-        .brand-title { font-family: 'Outfit'; font-size: 2rem; font-weight: 800; line-height: 1.1; }
-        .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* Sembunyikan teks tombol di HP, tampilkan icon saja tapi lebih besar */
+        .btn-sm .btn-text { display: none; }
+        .btn-sm { padding: 10px; justify-content: center; } 
+        .btn-sm i { font-size: 18px; }
         
-        .profile-btn {
-            background: white; border: none; width: 48px; height: 48px; border-radius: 14px;
-            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s;
-            color: var(--text-gray); display: flex; align-items: center; justify-content: center;
-        }
-        .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(10deg); box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3); }
-
-        /* ADMIN PANEL & INPUTS */
-        .admin-controls {
-            background: white; padding: 1.2rem; border-radius: var(--radius-md);
-            margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 12px;
-            animation: slideDown 0.3s ease-out; border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .input-wrapper { display: flex; gap: 10px; }
-        input[type="text"], input[type="password"] {
-            flex-grow: 1; padding: 14px 16px; border-radius: 12px;
-            border: 2px solid #e2e8f0; outline: none; background: #f8fafc;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        input:focus { border-color: var(--accent-color); background: white; }
-
-        /* BUTTONS */
-        .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;}
-        .btn-primary { background: var(--primary-gradient); color: white; }
-        .btn-add { background: var(--text-dark); color: white; min-width: 50px; }
-        .btn-add:hover { background: black; transform: scale(1.05); }
-
-        /* ADMIN TOOL BUTTONS (MOBILE FIX) */
-        .admin-tools { 
-            display: flex; gap: 8px; justify-content: flex-end; margin-top: 5px; 
-            flex-wrap: wrap; /* Agar tombol turun ke bawah di HP */
-        }
-        .btn-sm {
-            font-size: 0.8rem; padding: 8px 12px; border-radius: 8px;
-            display: flex; align-items: center; gap: 6px; white-space: nowrap;
-        }
-        .btn-uncheck { background: #dbeafe; color: #1e40af; } /* Biru */
-        .btn-clear { background: #fef3c7; color: #92400e; }   /* Kuning */
-        .btn-reset { background: #fee2e2; color: #991b1b; }   /* Merah */
-        .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; } /* Abu */
-
-        /* LIST ITEMS */
-        ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-        .todo-item {
-            background: rgba(255, 255, 255, 0.6); border: 1px solid white;
-            padding: 16px; border-radius: 16px; display: flex; align-items: center; transition: 0.3s;
-            position: relative;
-        }
-        .todo-item:hover { background: rgba(255, 255, 255, 0.9); transform: translateX(2px); }
-        .todo-item.completed { opacity: 0.7; background: rgba(255,255,255,0.4); }
-        .todo-item.completed .task-text { text-decoration: line-through; color: #94a3b8; }
+        /* Pastikan tombol tools rata tengah/menyebar rapi */
+        .admin-tools { justify-content: center; gap: 10px; }
         
-        .custom-checkbox {
-            appearance: none; width: 24px; height: 24px;
-            border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .custom-checkbox:checked { background: var(--accent-color); border-color: var(--accent-color); }
-        .custom-checkbox:checked::after { content: '✔'; color: white; font-size: 14px; font-weight: bold; }
-
-        .task-text { flex-grow: 1; font-weight: 500; padding: 0 15px; font-size: 1rem; }
-
-        /* ACTION ICONS (Hidden by default, shown in Edit Mode) */
-        .item-actions { display: none; gap: 4px; }
-        .edit-mode-active .item-actions { display: flex; }
-        
-        .action-icon {
-            width: 32px; height: 32px; border-radius: 8px; 
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: 0.2s; background: rgba(0,0,0,0.03);
-        }
-        .action-icon:hover { transform: scale(1.1); }
-        .icon-up { color: #3b82f6; } .icon-down { color: #8b5cf6; } .icon-del { color: #ef4444; }
-
-        /* MODAL */
-        .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .modal-content { 
-            background: white; padding: 2.5rem; border-radius: 24px; width: 90%; max-width: 400px; 
-            text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        .pass-container { position: relative; margin: 15px 0; }
-        .pass-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); font-size: 20px; }
-
-        .empty-state { text-align: center; padding: 3rem 0; color: var(--text-gray); display: none; }
-
-        /* --- MOBILE RESPONSIVE TWEAKS --- */
-        @media (max-width: 640px) {
-            .container { padding: 1.5rem; width: 95%; }
-            .brand-title { font-size: 1.75rem; }
-            
-            /* Sembunyikan teks tombol di HP, tampilkan icon saja tapi lebih besar */
-            .btn-sm .btn-text { display: none; }
-            .btn-sm { padding: 10px; justify-content: center; } 
-            .btn-sm i { font-size: 18px; }
-            
-            /* Pastikan tombol tools rata tengah/menyebar rapi */
-            .admin-tools { justify-content: center; gap: 10px; }
-            
-            /* Input tambah task full width di atas tombol tambah */
-            .input-wrapper { flex-direction: row; } 
-        }
-    </style>
-</head>
-<body class="mode-teaser"> <div class="bg-blob blob-1"></div>
-    <div class="bg-blob blob-2"></div>
-
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <h2 style="font-family:'Outfit'; margin-bottom:10px;">Admin Access</h2>
-            <p style="color:var(--text-gray); font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
-            
-            <div class="pass-container">
-                <input type="password" id="passwordInput" placeholder="Password" onkeypress="if(event.key === 'Enter') attemptLogin()">
-                <i class="ph ph-eye" id="eyeIcon" onclick="togglePasswordVisibility()"></i>
-            </div>
-            
-            <div id="errorMsg" style="color:#ef4444; font-size: 0.85rem; margin-bottom: 15px; display: none; background:#fee2e2; padding:8px; border-radius:8px;">
-                Password salah cepaa!
-            </div>
-            
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button onclick="closeModal()" class="btn" style="background:transparent; color:var(--text-gray)">Batal</button>
-                <button class="btn btn-primary" onclick="attemptLogin()">Login</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="container" id="mainContainer">
-        
-        <div class="login-overlay">
-            <i class="ph-duotone ph-lock-key" style="font-size: 64px; color: var(--accent-color); margin-bottom: 15px;"></i>
-            <h2>yakin kamu cepa? <br> coba login sekarang!</h2>
-            <button class="btn btn-primary" onclick="openLogin()" style="margin-top: 20px;">
-                Login Sekarang <i class="ph-bold ph-arrow-right"></i>
-            </button>
-        </div>
-
-        <header>
-            <div>
-                <div class="brand-title"><span class="brand-highlight">Cheva's</span> <br> To Do List</div>
-                <div id="dateDisplay" style="color:var(--text-gray); font-size: 0.85rem; margin-top: 5px; font-weight: 600;"></div>
-            </div>
-            <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()" title="Toggle Edit Mode">
-                <i class="ph ph-user-focus" style="font-size: 24px;"></i>
-            </button>
-        </header>
-
-        <div class="admin-controls" id="adminPanel">
-            <div class="input-wrapper">
-                <input type="text" id="newTaskInput" placeholder="Apa yang harus dilakukan oleh cepaaa?" onkeypress="if(event.key === 'Enter') addTask()">
-                <button class="btn btn-add" onclick="addTask()"><i class="ph-bold ph-plus" style="font-size: 20px;"></i></button>
-            </div>
-            
-            <div class="admin-tools">
-                <button class="btn btn-sm btn-uncheck" onclick="apiCall('uncheck_all')">
-                    <i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="btn-text">Uncheck All</span>
-                </button>
-                <button class="btn btn-sm btn-clear" onclick="apiCall('clear_completed')">
-                    <i class="ph-bold ph-broom"></i> <span class="btn-text">Clear Done</span>
-                </button>
-                <button class="btn btn-sm btn-reset" onclick="if(confirm('Reset semua list ke awal?')) apiCall('reset')">
-                    <i class="ph-bold ph-trash"></i> <span class="btn-text">Reset All</span>
-                </button>
-                <button class="btn btn-sm btn-logout" onclick="logout()">
-                    <i class="ph-bold ph-sign-out"></i> <span class="btn-text">Logout</span>
-                </button>
-            </div>
-        </div>
-
-        <ul id="todoList"></ul>
-
-        <div class="empty-state" id="emptyState">
-            <i class="ph ph-sparkle" style="font-size: 48px; margin-bottom: 10px; color:#cbd5e1"></i>
-            <p>Wow, bersih sekali!</p>
-        </div>
-    </div>
-
-    <script>
-        let tasks = [];
-        let isLoggedIn = false;
-        let isEditMode = false;
-
-        // 1. Inisialisasi
-        async function init() {
-            try {
-                const res = await fetch('/api/api.php?action=get_all');
-                const json = await res.json();
-                
-                // Simpan data tasks
-                tasks = json.data || [];
-                
-                // Cek status login dari server
-                // Jika status != locked, berarti user sudah login sebelumnya (session masih aktif)
-                if (json.status !== 'locked') {
-                    isLoggedIn = true;
-                    document.body.classList.remove('mode-teaser');
-                } else {
-                    isLoggedIn = false;
-                    document.body.classList.add('mode-teaser');
-                }
-                
-                render();
-            } catch (e) {
-                console.error("Gagal memuat data:", e);
-            }
-        }
-
-        // 2. Fungsi Render UI
-        function render() {
-            const listEl = document.getElementById('todoList');
-            const adminPanel = document.getElementById('adminPanel');
-            const profileBtn = document.getElementById('profileBtn');
-            const container = document.getElementById('mainContainer');
-            const emptyState = document.getElementById('emptyState');
-
-            // Set Tanggal
-            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
-
-            // Logika Tampilan Edit Mode
-            // Tombol profile aktif jika Edit Mode nyala
-            profileBtn.classList.toggle('active', isEditMode);
-            
-            // Panel admin hanya muncul jika Login DAN Edit Mode nyala
-            if (isLoggedIn && isEditMode) {
-                adminPanel.style.display = 'flex';
-                container.classList.add('edit-mode-active');
-            } else {
-                adminPanel.style.display = 'none';
-                container.classList.remove('edit-mode-active');
-            }
-
-            // Render List
-            listEl.innerHTML = '';
-            if (tasks.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-                tasks.forEach((t, i) => {
-                    const li = document.createElement('li');
-                    li.className = `todo-item ${t.is_completed ? 'completed' : ''}`;
-                    li.innerHTML = `
-                        <input type="checkbox" class="custom-checkbox" 
-                            ${t.is_completed ? 'checked' : ''} 
-                            onchange="apiCall('toggle', {id:${t.id}})">
-                        
-                        <span class="task-text">${t.task_name}</span>
-                        
-                        <div class="item-actions">
-                            <div class="action-icon icon-up" onclick="move(${i}, -1)"><i class="ph-bold ph-caret-up"></i></div>
-                            <div class="action-icon icon-down" onclick="move(${i}, 1)"><i class="ph-bold ph-caret-down"></i></div>
-                            <div class="action-icon icon-del" onclick="deleteTask(${t.id})"><i class="ph-bold ph-trash"></i></div>
-                        </div>
-                    `;
-                    listEl.appendChild(li);
-                });
-            }
-        }
-
-        // 3. Fungsi Modal & Login
-        function openLogin() { 
-            document.getElementById('loginModal').style.display = 'flex'; 
-            document.getElementById('passwordInput').focus();
-        }
-        
-        function closeModal() { 
-            document.getElementById('loginModal').style.display = 'none'; 
-            document.getElementById('errorMsg').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-        }
-
-        function togglePasswordVisibility() {
-            const inp = document.getElementById('passwordInput');
-            const ico = document.getElementById('eyeIcon');
-            if(inp.type === 'password') {
-                inp.type = 'text'; ico.className = 'ph ph-eye-slash';
-            } else {
-                inp.type = 'password'; ico.className = 'ph ph-eye';
-            }
-        }
-
-        async function attemptLogin() {
-            const pass = document.getElementById('passwordInput').value;
-            if(!pass) return;
-
-            try {
-                const res = await fetch('/api/api.php?action=login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ password: pass })
-                });
-                const json = await res.json();
-                
-                if(json.status === 'success') {
-                    // Login Sukses
-                    closeModal();
-                    isLoggedIn = true;
-                    document.body.classList.remove('mode-teaser');
-                    isEditMode = false; // Default ke View Mode setelah login
-                    init(); // Refresh data
-                } else {
-                    // Login Gagal
-                    document.getElementById('errorMsg').style.display = 'block';
-                }
-            } catch (e) {
-                console.error("Login Error", e);
-            }
-        }
-
-        // 4. Fungsi Edit Mode & API
-        function toggleEditMode() {
-            if(!isLoggedIn) {
-                openLogin(); // Jika belum login, buka modal login dulu
-            } else {
-                isEditMode = !isEditMode; // Toggle mode
-                render();
-            }
-        }
-
-        async function apiCall(action, data = {}) {
-            await fetch(`/api/api.php?action=${action}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            init(); // Refresh list setelah aksi
-        }
-
-        function addTask() {
-            const input = document.getElementById('newTaskInput');
-            const val = input.value.trim();
-            if(val) { 
-                apiCall('add', {task: val}); 
-                input.value = ''; 
-            }
-        }
-
-        function deleteTask(id) {
-            if(confirm("Yakin hapus tugas ini cepaa?")) apiCall('delete', {id});
-        }
-
-        function move(idx, dir) {
-            const t1 = tasks[idx];
-            const t2 = tasks[idx+dir];
-            // Cek batas atas/bawah
-            if(t2) {
-                apiCall('swap', {
-                    id1: t1.id, order1: t1.list_order, 
-                    id2: t2.id, order2: t2.list_order
-                });
-            }
-        }
-
-        function logout() {
-            fetch('/api/api.php?action=logout').then(() => {
-                location.reload(); // Reload halaman untuk kembali ke mode Teaser
-            });
-        }
-
-        // Jalankan saat load
-        init();
-    </script>
-</body>
-</html>
+        .input-wrapper { flex-direction: row; } 
+    }
+</style>
