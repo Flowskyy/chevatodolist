@@ -3,377 +3,591 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cheva's To Do List</title>
+    <title>Cheva's Ultimate List</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        display: ['"Outfit"', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#6366f1',
+                        accent: '#8B5CF6',
+                    },
+                    animation: {
+                        'blob': 'floatBlob 10s infinite alternate',
+                        'pop': 'popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        'slide-up': 'slideInUp 0.4s ease backwards',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        /* --- 1. CORE VARIABLES & RESET --- */
-        :root {
-            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            --accent-color: #8B5CF6;
-            --glass-bg: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.8);
-            --glass-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
-            --text-dark: #1e293b;
-            --text-gray: #64748b;
-            --radius-xl: 24px;
-            --radius-md: 16px;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f3f4f6;
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex; justify-content: center; align-items: flex-start;
-            overflow-x: hidden; position: relative;
-            padding-top: 60px; 
-            padding-bottom: 60px;
-        }
-
-        /* --- 2. DEKORASI BACKGROUND --- */
-        .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.6; animation: floatBlob 10s infinite alternate; }
-        .blob-1 { width: 400px; height: 400px; background: #c084fc; top: -100px; left: -100px; }
-        .blob-2 { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; right: -50px; animation-delay: -5s; }
+        /* Custom Keyframes & Utilities yang sulit di Tailwind murni */
         @keyframes floatBlob { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
-
-        /* --- 3. CONTAINER UTAMA --- */
-        .container {
-            width: 90%; 
-            max-width: 500px;
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-            box-shadow: var(--glass-shadow); padding: 2.5rem; position: relative; transition: 0.5s;
-        }
-
-        /* TEASER MODE (BLUR EFFECT) */
-        .mode-teaser .todo-item, .mode-teaser header, .mode-teaser .empty-state { 
-            filter: blur(10px); pointer-events: none; user-select: none; opacity: 0.5;
-        }
-        
-        .login-overlay {
-            position: absolute; inset: 0; z-index: 100;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; padding: 20px; border-radius: var(--radius-xl);
-        }
-        .mode-teaser .login-overlay { display: flex; animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .login-overlay h2 { font-family: 'Outfit'; font-size: 1.6rem; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.4; }
-
-        /* HEADER */
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
-        .brand-title { font-family: 'Outfit'; font-size: 2rem; font-weight: 800; line-height: 1.1; }
-        .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .profile-btn {
-            background: white; border: none; width: 48px; height: 48px; border-radius: 14px;
-            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s;
-            color: var(--text-gray); display: flex; align-items: center; justify-content: center;
-        }
-        .profile-btn:hover { transform: scale(1.05); }
-        .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(10deg); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); }
-
-        /* --- ADMIN PANEL (EDIT MODE) --- */
-        .admin-controls {
-            background: white; padding: 1rem; border-radius: var(--radius-md);
-            margin-bottom: 1.5rem; display: none; flex-direction: column; gap: 12px;
-            animation: slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-        }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .input-wrapper { display: flex; gap: 10px; width: 100%; align-items: center; }
-        
-        input[type="text"], input[type="password"] {
-            flex: 1; min-width: 0;
-            padding: 14px 16px; border-radius: 12px;
-            border: 2px solid #e2e8f0; outline: none; background: #f8fafc;
-            font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem;
-        }
-        input:focus { border-color: var(--accent-color); background: white; }
-
-        .btn-add { 
-            flex-shrink: 0; width: 50px; height: 50px; 
-            border-radius: 12px; border: none; background: var(--text-dark); color: white; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 20px;
-        }
-        .btn-add:hover { background: black; }
-
-        .admin-tools { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-        .btn-sm {
-            border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
-            font-size: 0.85rem; padding: 10px 14px; border-radius: 10px;
-            display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: 0.2s;
-        }
-        .btn-sm:active { transform: scale(0.95); }
-        .btn-uncheck { background: #eff6ff; color: #1d4ed8; }
-        .btn-clear { background: #fffbeb; color: #b45309; } 
-        .btn-reset { background: #fef2f2; color: #b91c1c; }
-        .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; margin-left: auto; }
-
-        .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 14px 24px; font-size: 1rem;}
-        .btn-primary { background: var(--primary-gradient); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-
-        /* --- LIST ITEMS --- */
-        ul { list-style: none; display: flex; flex-direction: column; gap: 16px; padding-bottom: 20px; }
-
-        .todo-item {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            border: 1px solid white;
-            padding: 18px 20px;
-            border-radius: 18px; 
-            display: flex; align-items: center; gap: 16px;
-            position: relative;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            border-left: 5px solid transparent;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            animation: slideInUp 0.5s ease backwards;
-        }
-
-        .todo-item:hover {
-            transform: translateY(-4px);
-            background: #ffffff;
-            border-left-color: var(--accent-color);
-        }
-
-        .todo-item.completed { opacity: 0.7; background: rgba(241, 245, 249, 0.6); }
-        .todo-item.completed .task-text { text-decoration: line-through; color: #94a3b8; font-style: italic; }
-
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        
-        .custom-checkbox {
-            appearance: none; width: 24px; height: 24px; flex-shrink: 0;
-            border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer;
-            display: grid; place-content: center; transition: 0.3s;
-            background: #fff;
-        }
-        .custom-checkbox:checked { background: var(--accent-color); border-color: var(--accent-color); }
-        .custom-checkbox:checked::after { content: '✔'; color: white; font-size: 14px; font-weight: bold; }
-
-        .task-text { flex-grow: 1; font-weight: 600; font-size: 1.05rem; color: var(--text-dark); }
-
-        .item-actions { display: none; gap: 6px; flex-shrink: 0; }
-        .edit-mode-active .item-actions { display: flex; }
-        
-        .action-icon {
-            width: 32px; height: 32px; border-radius: 8px; 
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: 0.2s; background: #f1f5f9; color: var(--text-gray);
-        }
-        .action-icon:hover { background: var(--text-dark); color: white; }
-        .icon-del:hover { background: #ef4444; }
-
-        /* MODAL */
-        .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
-        }
-        .modal-content { 
-            background: white; padding: 2rem; border-radius: 24px; width: 100%; max-width: 380px; 
-            text-align: center; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
         @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        .pass-container { position: relative; margin: 20px 0; }
-        .pass-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); }
+        @keyframes popCheck { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .empty-state { text-align: center; padding: 3rem 0; color: var(--text-gray); display: none; }
-
-        @media (max-width: 480px) {
-            .container { padding: 1.5rem; width: 92%; }
-            .btn-sm .btn-text { display: none; }
-            .btn-sm { flex: 1; justify-content: center; }
+        /* Custom Checkbox Animation */
+        .custom-checkbox:checked { animation: popCheck 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .custom-checkbox::after {
+            content: ''; width: 6px; height: 10px;
+            border: solid white; border-width: 0 2.5px 2.5px 0;
+            transform: rotate(45deg) scale(0); transition: transform 0.2s ease-in-out;
+            position: absolute; top: 50%; left: 50%; margin-top: -6px; margin-left: -3px;
         }
+        .custom-checkbox:checked::after { transform: rotate(45deg) scale(1); }
+
+        /* Mode Teaser Blur */
+        .mode-teaser .blur-target { filter: blur(8px); pointer-events: none; opacity: 0.6; user-select: none; }
+        
+        /* Hide Scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="mode-teaser"> 
-    <div class="bg-blob blob-1"></div>
-    <div class="bg-blob blob-2"></div>
+<body class="bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex justify-center items-start pt-16 pb-20 transition-colors duration-300 mode-teaser overflow-x-hidden selection:bg-accent selection:text-white">
 
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <h2 style="font-family:'Outfit'">Admin Access</h2>
-            <p style="color:var(--text-gray); font-size: 0.9rem;">Masukkan password untuk mengelola daftar.</p>
-            <div class="pass-container">
-                <input type="password" id="passwordInput" placeholder="Password..." onkeypress="if(event.key === 'Enter') attemptLogin()">
-                <i class="ph ph-eye" id="eyeIcon" onclick="togglePasswordVisibility()"></i>
+    <div class="fixed top-[-100px] left-[-100px] w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob -z-10"></div>
+    <div class="fixed bottom-[-50px] right-[-50px] w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000 -z-10"></div>
+
+    <audio id="sound-check" src="https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3"></audio>
+    <audio id="sound-complete" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+
+    <div id="loginModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden justify-center items-center p-4">
+        <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border border-white/20 animate-pop">
+            <h2 class="font-display text-2xl font-bold mb-2">Admin Access</h2>
+            <p class="text-slate-500 text-sm mb-6">Masukkan password untuk kelola tugas.</p>
+            
+            <div class="relative mb-4">
+                <input type="password" id="passwordInput" placeholder="Password..." 
+                    class="w-full p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 outline-none focus:border-accent transition-colors"
+                    onkeypress="if(event.key === 'Enter') attemptLogin()">
+                <i class="ph ph-eye absolute right-4 top-1/2 -translate-y-1/2 text-xl text-slate-400 cursor-pointer" id="eyeIcon" onclick="togglePass()"></i>
             </div>
-            <div id="errorMsg" style="color:#ef4444; font-size: 0.85rem; margin-bottom: 15px; display: none;">Password salah cepaa!</div>
-            <div style="display:flex; justify-content:center; gap:10px;">
-                <button onclick="closeModal()" class="btn" style="background:#f1f5f9; color:var(--text-gray)">Batal</button>
-                <button class="btn btn-primary" onclick="attemptLogin()" style="flex:1">Login</button>
+            
+            <p id="errorMsg" class="text-red-500 text-sm mb-4 hidden">Password salah, coba lagi!</p>
+            
+            <div class="flex gap-3">
+                <button onclick="closeModal()" class="px-6 py-3 rounded-xl bg-slate-100 dark:bg-slate-700 font-semibold text-slate-500 hover:bg-slate-200 transition">Batal</button>
+                <button onclick="attemptLogin()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold shadow-lg hover:shadow-indigo-500/30 transition transform active:scale-95">Login</button>
             </div>
         </div>
     </div>
 
-    <div class="container" id="mainContainer">
-        <div class="login-overlay">
-            <i class="ph-duotone ph-lock-key" style="font-size: 64px; color: var(--accent-color); margin-bottom: 15px;"></i>
-            <h2>yakin kamu cepa? <br> coba login sekarang!</h2>
-            <button class="btn btn-primary" onclick="openLogin()">Login Sekarang</button>
-        </div>
-
-        <header>
-            <div>
-                <div class="brand-title"><span class="brand-highlight">Cheva's</span> <br> To Do List</div>
-                <div id="dateDisplay" style="color:var(--text-gray); font-size: 0.9rem; margin-top: 5px; font-weight: 600;"></div>
-            </div>
-            <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()">
-                <i class="ph ph-user-focus" style="font-size: 24px;"></i>
-            </button>
-        </header>
-
-        <div class="admin-controls" id="adminPanel">
-            <div class="input-wrapper">
-                <input type="text" id="newTaskInput" placeholder="Tulis tugas baru..." autocomplete="off" onkeypress="if(event.key === 'Enter') addTask()">
-                <button class="btn-add" onclick="addTask()"><i class="ph-bold ph-plus"></i></button>
-            </div>
-            <div class="admin-tools">
-                <button class="btn-sm btn-uncheck" onclick="apiCall('uncheck_all')"><i class="ph-bold ph-arrow-counter-clockwise"></i><span class="btn-text">Uncheck All</span></button>
-                <button class="btn-sm btn-clear" onclick="apiCall('clear_completed')"><i class="ph-bold ph-broom"></i><span class="btn-text">Clear Done</span></button>
-                <button class="btn-sm btn-reset" onclick="if(confirm('Reset semua?')) apiCall('reset')"><i class="ph-bold ph-trash"></i><span class="btn-text">Reset</span></button>
-                <button class="btn-sm btn-logout" onclick="logout()"><i class="ph-bold ph-sign-out"></i><span class="btn-text">Logout</span></button>
+    <div class="w-[92%] max-w-[500px] relative transition-all duration-500">
+        
+        <div id="teaserOverlay" class="absolute inset-0 z-40 hidden flex-col justify-center items-center text-center">
+            <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-8 rounded-3xl shadow-xl border border-white/50">
+                <i class="ph-duotone ph-lock-key text-6xl text-accent mb-4"></i>
+                <h2 class="font-display text-2xl font-bold mb-4 leading-tight">Cheva,<br>Login dulu yuk!</h2>
+                <button onclick="openLogin()" class="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-bold shadow-lg hover:scale-105 transition">
+                    Login Sekarang
+                </button>
             </div>
         </div>
 
-        <ul id="todoList"></ul>
-        <div class="empty-state" id="emptyState">
-            <i class="ph ph-confetti" style="font-size: 48px; margin-bottom: 10px; color:#cbd5e1"></i>
-            <p>Semua tugas selesai! Keren!</p>
+        <div class="bg-white/65 dark:bg-slate-900/60 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.1)] rounded-[32px] p-6 sm:p-10 blur-target transition-all duration-300">
+            
+            <header class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="font-display text-3xl font-extrabold leading-none tracking-tight">
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">Cheva's</span><br>To Do List
+                    </h1>
+                    <div id="dateDisplay" class="text-slate-500 dark:text-slate-400 text-sm font-semibold mt-1"></div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleFocusMode()" id="focusBtn" class="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:text-accent hover:shadow-md transition" title="Focus Mode">
+                        <i class="ph-bold ph-target text-xl"></i>
+                    </button>
+                    <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:text-yellow-500 hover:shadow-md transition" title="Theme">
+                        <i class="ph-bold ph-moon-stars text-xl" id="themeIcon"></i>
+                    </button>
+                    <button onclick="toggleEditMode()" id="profileBtn" class="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:shadow-md transition" title="Admin">
+                        <i class="ph-bold ph-user-focus text-xl"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="mb-6">
+                <div class="flex justify-between text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">
+                    <span>Daily Progress</span>
+                    <span id="progressText">0%</span>
+                </div>
+                <div class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-0 transition-all duration-700 ease-out rounded-full"></div>
+                </div>
+            </div>
+
+            <div class="relative mb-6 group">
+                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-accent transition-colors"></i>
+                <input type="text" id="searchInput" placeholder="Cari tugas..." 
+                    oninput="render()"
+                    class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-accent rounded-xl outline-none text-sm transition-all shadow-sm">
+            </div>
+
+            <div id="adminPanel" class="hidden flex-col gap-4 mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm animate-slide-up">
+                <div class="flex gap-2">
+                    <input type="text" id="newTaskInput" placeholder="Tulis tugas baru..." autocomplete="off" 
+                        class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-700 rounded-xl outline-none border-2 border-slate-100 dark:border-slate-600 focus:border-accent text-sm"
+                        onkeypress="if(event.key === 'Enter') addTask()">
+                    <button onclick="addTask()" class="w-12 h-12 flex-shrink-0 bg-slate-800 dark:bg-white text-white dark:text-slate-900 rounded-xl flex items-center justify-center hover:scale-105 transition shadow-lg">
+                        <i class="ph-bold ph-plus text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-3 px-1">
+                    <span class="text-xs text-slate-400 font-bold">TAG:</span>
+                    <div class="flex gap-2">
+                        <label class="cursor-pointer group relative">
+                            <input type="radio" name="cat" value="transparent" checked class="peer sr-only">
+                            <div class="w-6 h-6 rounded-full bg-slate-200 border-2 border-transparent peer-checked:border-slate-500 peer-checked:scale-110 transition"></div>
+                        </label>
+                        <label class="cursor-pointer group relative">
+                            <input type="radio" name="cat" value="#ef4444" class="peer sr-only">
+                            <div class="w-6 h-6 rounded-full bg-red-500 border-2 border-transparent peer-checked:border-slate-800 dark:peer-checked:border-white peer-checked:scale-110 transition"></div>
+                        </label>
+                        <label class="cursor-pointer group relative">
+                            <input type="radio" name="cat" value="#3b82f6" class="peer sr-only">
+                            <div class="w-6 h-6 rounded-full bg-blue-500 border-2 border-transparent peer-checked:border-slate-800 dark:peer-checked:border-white peer-checked:scale-110 transition"></div>
+                        </label>
+                        <label class="cursor-pointer group relative">
+                            <input type="radio" name="cat" value="#10b981" class="peer sr-only">
+                            <div class="w-6 h-6 rounded-full bg-emerald-500 border-2 border-transparent peer-checked:border-slate-800 dark:peer-checked:border-white peer-checked:scale-110 transition"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 justify-end pt-2 border-t border-slate-100 dark:border-slate-700">
+                    <button onclick="apiCall('uncheck_all')" class="text-xs font-semibold px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition flex items-center gap-1">
+                        <i class="ph-bold ph-arrow-counter-clockwise"></i> Uncheck
+                    </button>
+                    <button onclick="apiCall('clear_completed')" class="text-xs font-semibold px-3 py-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition flex items-center gap-1">
+                        <i class="ph-bold ph-broom"></i> Clear Done
+                    </button>
+                    <button onclick="if(confirm('Reset semua?')) apiCall('reset')" class="text-xs font-semibold px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition flex items-center gap-1">
+                        <i class="ph-bold ph-trash"></i> Reset
+                    </button>
+                    <button onclick="logout()" class="text-xs font-semibold px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition ml-auto flex items-center gap-1">
+                        <i class="ph-bold ph-sign-out"></i> Logout
+                    </button>
+                </div>
+            </div>
+
+            <ul id="todoList" class="flex flex-col gap-3 min-h-[50px] pb-4"></ul>
+
+            <div id="emptyState" class="hidden text-center py-10">
+                <div class="inline-flex justify-center items-center w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full mb-4 shadow-inner">
+                    <i class="ph-duotone ph-confetti text-4xl text-slate-300"></i>
+                </div>
+                <p class="font-bold text-lg mb-1">Tugas Selesai!</p>
+                <p id="quoteText" class="text-sm text-slate-400 italic">"Stay productive, stay happy."</p>
+            </div>
+            
+            <div id="focusStateMsg" class="hidden text-center py-8">
+                 <p class="text-sm text-accent font-bold bg-accent/10 inline-block px-3 py-1 rounded-full animate-pulse">🎯 Focus Mode Active</p>
+             </div>
+
         </div>
     </div>
 
     <script>
+        // --- STATE & VARIABLES ---
         let tasks = [];
         let isLoggedIn = false;
         let isEditMode = false;
+        let isFocusMode = false;
+        let sortableInstance = null;
+        
+        // Audio Objects
+        const soundCheck = document.getElementById('sound-check');
+        const soundComplete = document.getElementById('sound-complete');
+
+        const quotes = [
+            "Mulai dari yang kecil, selesaikan yang besar.",
+            "Fokus satu persatu, jangan panik.",
+            "You are doing great, Cheva!",
+            "Disiplin adalah kunci.",
+            "Istirahat itu perlu, menyerah jangan."
+        ];
+
+        // --- INITIALIZATION ---
+        
+        // Check Theme
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.getElementById('themeIcon').classList.replace('ph-moon-stars', 'ph-sun');
+        }
 
         async function init() {
+            renderDate();
+            
+            // 1. Load from LocalStorage (Instant Load)
+            const cached = localStorage.getItem('cheva_tasks');
+            if(cached) tasks = JSON.parse(cached);
+            
+            const cachedAuth = localStorage.getItem('cheva_auth');
+            if(cachedAuth === 'true') {
+                isLoggedIn = true;
+                updateAuthUI(true);
+            } else {
+                updateAuthUI(false);
+            }
+
+            render();
+
+            // 2. Fetch from API (Sync)
             try {
                 const res = await fetch('/api/api.php?action=get_all');
                 const json = await res.json();
-                tasks = json.data || [];
-                isLoggedIn = (json.status !== 'locked');
-                updateTeaserMode();
-                render();
+                
+                // Jika server bilang locked tapi local bilang login, kita ikut server (force logout)
+                if (json.status === 'locked') {
+                    isLoggedIn = false;
+                    localStorage.setItem('cheva_auth', 'false');
+                    updateAuthUI(false);
+                } else {
+                    isLoggedIn = true;
+                    localStorage.setItem('cheva_auth', 'true');
+                    updateAuthUI(true);
+                    
+                    // Sync Data
+                    tasks = json.data || [];
+                    saveLocal(); // Update cache
+                    render();
+                }
             } catch (e) {
-                console.warn("Server API tidak terdeteksi. Berjalan dalam mode demo.");
-                // Dummy Data jika API tidak ada
-                if(tasks.length === 0) tasks = [{id:1, task_name: 'Contoh Tugas', is_completed: false}];
-                render();
+                console.log("Offline mode or API error");
             }
         }
 
-        function updateTeaserMode() {
-            if (isLoggedIn) document.body.classList.remove('mode-teaser');
-            else document.body.classList.add('mode-teaser');
+        function updateAuthUI(status) {
+            const body = document.body;
+            const overlay = document.getElementById('teaserOverlay');
+            if(status) {
+                body.classList.remove('mode-teaser');
+                overlay.classList.remove('flex');
+                overlay.classList.add('hidden');
+            } else {
+                body.classList.add('mode-teaser');
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            }
         }
 
-        function render() {
-            const listEl = document.getElementById('todoList');
-            const container = document.getElementById('mainContainer');
-            const profileBtn = document.getElementById('profileBtn');
-            const adminPanel = document.getElementById('adminPanel');
-            const emptyState = document.getElementById('emptyState');
+        function saveLocal() {
+            localStorage.setItem('cheva_tasks', JSON.stringify(tasks));
+        }
 
+        function renderDate() {
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
+        }
 
-            profileBtn.classList.toggle('active', isEditMode);
-            adminPanel.style.display = (isLoggedIn && isEditMode) ? 'flex' : 'none';
-            container.classList.toggle('edit-mode-active', isEditMode);
+        // --- RENDER ENGINE ---
+        function render() {
+            const listEl = document.getElementById('todoList');
+            const emptyState = document.getElementById('emptyState');
+            const focusMsg = document.getElementById('focusStateMsg');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            // Sorting: Uncompleted first, then by List Order
+            let renderTasks = [...tasks].sort((a, b) => a.list_order - b.list_order);
+            
+            // Filter Search
+            if(searchTerm) {
+                renderTasks = renderTasks.filter(t => t.task_name.toLowerCase().includes(searchTerm));
+            }
+
+            // Focus Mode Logic
+            if(isFocusMode) {
+                const firstIncomplete = renderTasks.find(t => t.is_completed == 0);
+                renderTasks = firstIncomplete ? [firstIncomplete] : [];
+                focusMsg.classList.remove('hidden');
+            } else {
+                focusMsg.classList.add('hidden');
+            }
 
             listEl.innerHTML = '';
-            if (tasks.length === 0) {
-                emptyState.style.display = 'block';
+
+            if (renderTasks.length === 0 && !searchTerm && !isFocusMode) {
+                emptyState.classList.remove('hidden');
+                document.getElementById('quoteText').innerText = quotes[Math.floor(Math.random() * quotes.length)];
             } else {
-                emptyState.style.display = 'none';
-                tasks.forEach((t, i) => {
+                emptyState.classList.add('hidden');
+                
+                renderTasks.forEach((t, i) => {
+                    // Logic delay animasi staggered
+                    const delay = i < 10 ? `animation-delay: ${i * 50}ms` : '';
+                    
+                    // Tag Color
+                    const tagColor = t.category_color && t.category_color !== 'transparent' 
+                        ? `border-l-4 border-[${t.category_color}]` 
+                        : 'border-l-4 border-transparent';
+                    
+                    // Inline style untuk warna border dynamic karena Tailwind arbitrary value perlu full string di class
+                    const borderStyle = t.category_color && t.category_color !== 'transparent' ? `border-left-color: ${t.category_color}` : '';
+
                     const li = document.createElement('li');
-                    li.className = `todo-item ${t.is_completed ? 'completed' : ''}`;
-                    li.style.animationDelay = `${i * 0.05}s`;
+                    li.className = `
+                        group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-4 rounded-2xl 
+                        border border-white dark:border-slate-700 shadow-sm flex items-center gap-4 
+                        transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:bg-white dark:hover:bg-slate-700
+                        ${t.is_completed == 1 ? 'opacity-60 scale-98 grayscale' : 'animate-slide-up'}
+                    `;
+                    li.style = `${delay}; ${borderStyle}`;
+                    li.setAttribute('data-id', t.id);
+
                     li.innerHTML = `
-                        <input type="checkbox" class="custom-checkbox" ${t.is_completed ? 'checked' : ''} onchange="toggleTask(${t.id})">
-                        <span class="task-text">${t.task_name}</span>
-                        <div class="item-actions">
-                            <div class="action-icon" onclick="move(${i}, -1)"><i class="ph-bold ph-caret-up"></i></div>
-                            <div class="action-icon" onclick="move(${i}, 1)"><i class="ph-bold ph-caret-down"></i></div>
-                            <div class="action-icon icon-del" onclick="deleteTask(${t.id})"><i class="ph-bold ph-trash"></i></div>
+                        <div class="relative w-6 h-6 flex-shrink-0">
+                            <input type="checkbox" class="custom-checkbox w-full h-full appearance-none border-2 border-slate-300 dark:border-slate-500 rounded-lg checked:bg-accent checked:border-accent cursor-pointer transition-all" 
+                                ${t.is_completed == 1 ? 'checked' : ''} 
+                                onchange="toggleTask(${t.id}, this)">
+                        </div>
+                        
+                        <span class="flex-grow font-semibold text-slate-700 dark:text-slate-200 text-sm sm:text-base break-words transition-all ${t.is_completed == 1 ? 'line-through text-slate-400 italic' : ''}">
+                            ${t.task_name}
+                        </span>
+                        
+                        <div class="item-actions ${isEditMode ? 'flex' : 'hidden'} gap-2">
+                            <div class="drag-handle w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center cursor-grab text-slate-500 hover:text-accent">
+                                <i class="ph-bold ph-dots-six-vertical"></i>
+                            </div>
+                            <div onclick="deleteTask(${t.id})" class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center cursor-pointer text-red-500 hover:bg-red-500 hover:text-white transition">
+                                <i class="ph-bold ph-trash"></i>
+                            </div>
                         </div>
                     `;
                     listEl.appendChild(li);
                 });
             }
+            updateStats();
         }
 
-        // --- Auth Functions ---
-        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
-        function togglePasswordVisibility() {
-            const inp = document.getElementById('passwordInput');
-            inp.type = inp.type === 'password' ? 'text' : 'password';
-        }
+        // --- ACTIONS ---
 
-        async function attemptLogin() {
-            const pass = document.getElementById('passwordInput').value;
-            try {
-                const res = await fetch('/api/api.php?action=login', {
+        function toggleTask(id, cb) {
+            const task = tasks.find(t => t.id == id);
+            if(task) {
+                // Haptic Feedback
+                if (navigator.vibrate) navigator.vibrate(15);
+                
+                // Sound Effect
+                if (cb.checked) {
+                    soundCheck.currentTime = 0;
+                    soundCheck.play();
+                }
+
+                task.is_completed = cb.checked ? 1 : 0;
+                saveLocal();
+                render(); // Re-render visual changes locally first
+
+                // Background Sync
+                fetch('/api/api.php?action=toggle', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ password: pass })
+                    body: JSON.stringify({id})
                 });
-                const json = await res.json();
-                if(json.status === 'success') {
-                    isLoggedIn = true; closeModal(); updateTeaserMode(); init();
-                } else {
-                    document.getElementById('errorMsg').style.display = 'block';
-                }
-            } catch(e) {
-                // Simuasi Login Sukses jika tanpa server (untuk testing)
-                if(pass === "cheva") { isLoggedIn = true; closeModal(); updateTeaserMode(); }
             }
         }
 
-        function toggleEditMode() {
-            if(!isLoggedIn) openLogin();
-            else { isEditMode = !isEditMode; render(); }
-        }
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.is_completed == 1).length;
+            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+            
+            const bar = document.getElementById('progressBar');
+            const txt = document.getElementById('progressText');
+            
+            bar.style.width = `${percent}%`;
+            txt.innerText = `${percent}%`;
 
-        // --- Core Logic ---
-        async function apiCall(action, data = {}) {
-            await fetch(`/api/api.php?action=${action}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            init();
+            // Confetti & Sound at 100%
+            if (percent === 100 && total > 0) {
+                if(!localStorage.getItem('celebrated')) { // Prevent loop celebration
+                    launchConfetti();
+                    soundComplete.play();
+                    localStorage.setItem('celebrated', 'true');
+                }
+            } else {
+                localStorage.removeItem('celebrated');
+            }
         }
 
         function addTask() {
             const input = document.getElementById('newTaskInput');
-            if(input.value.trim()) { apiCall('add', {task: input.value.trim()}); input.value = ''; }
+            const val = input.value.trim();
+            const color = document.querySelector('input[name="cat"]:checked').value;
+
+            if(val) {
+                // Optimistic UI Update
+                const tempId = Date.now(); // Temporary ID
+                const newTask = { 
+                    id: tempId, 
+                    task_name: val, 
+                    is_completed: 0, 
+                    list_order: tasks.length,
+                    category_color: color 
+                };
+                
+                tasks.push(newTask);
+                saveLocal();
+                render();
+                input.value = '';
+
+                apiCall('add', {task: val, color: color});
+            }
         }
 
-        function toggleTask(id) { apiCall('toggle', {id}); }
-        function deleteTask(id) { if(confirm("Hapus?")) apiCall('delete', {id}); }
-        function logout() { fetch('/api/api.php?action=logout').then(() => location.reload()); }
+        // --- DRAG & DROP ---
+        function initSortable() {
+            const el = document.getElementById('todoList');
+            if (!sortableInstance) {
+                sortableInstance = Sortable.create(el, {
+                    animation: 150,
+                    handle: '.drag-handle',
+                    ghostClass: 'opacity-50',
+                    onEnd: function (evt) {
+                        const movedItem = tasks.splice(evt.oldIndex, 1)[0];
+                        tasks.splice(evt.newIndex, 0, movedItem);
+                        tasks.forEach((t, i) => t.list_order = i);
+                        saveLocal();
+                        // Sync order to backend (Implement if needed)
+                    }
+                });
+            }
+        }
+
+        function destroySortable() {
+            if (sortableInstance) {
+                sortableInstance.destroy();
+                sortableInstance = null;
+            }
+        }
+
+        // --- UTILS ---
+        function launchConfetti() {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#a855f7', '#ec4899'] });
+        }
+
+        function toggleFocusMode() {
+            isFocusMode = !isFocusMode;
+            document.getElementById('focusBtn').classList.toggle('text-accent');
+            document.getElementById('focusBtn').classList.toggle('bg-indigo-50');
+            render();
+        }
+
+        function toggleEditMode() {
+            if(!isLoggedIn) return openLogin();
+            isEditMode = !isEditMode;
+            const panel = document.getElementById('adminPanel');
+            const btn = document.getElementById('profileBtn');
+            
+            if(isEditMode) {
+                panel.classList.remove('hidden');
+                panel.classList.add('flex');
+                btn.classList.add('bg-indigo-500', 'text-white', 'border-transparent');
+                initSortable();
+            } else {
+                panel.classList.add('hidden');
+                panel.classList.remove('flex');
+                btn.classList.remove('bg-indigo-500', 'text-white', 'border-transparent');
+                destroySortable();
+            }
+            render();
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('themeIcon').className = isDark ? 'ph-bold ph-sun' : 'ph-bold ph-moon-stars';
+        }
+
+        function togglePass() {
+            const inp = document.getElementById('passwordInput');
+            const ico = document.getElementById('eyeIcon');
+            if(inp.type === 'password') { inp.type = 'text'; ico.className = 'ph ph-eye-slash text-accent'; }
+            else { inp.type = 'password'; ico.className = 'ph ph-eye text-slate-400'; }
+        }
+
+        // --- AUTH API ---
+        function openLogin() { 
+            document.getElementById('loginModal').classList.remove('hidden'); 
+            document.getElementById('loginModal').classList.add('flex');
+            setTimeout(() => document.getElementById('passwordInput').focus(), 100);
+        }
         
-        function move(idx, dir) {
-            const t1 = tasks[idx], t2 = tasks[idx+dir];
-            if(t2) apiCall('swap', {id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order});
+        function closeModal() { 
+            document.getElementById('loginModal').classList.add('hidden'); 
+            document.getElementById('loginModal').classList.remove('flex');
+            document.getElementById('errorMsg').classList.add('hidden');
+            document.getElementById('passwordInput').value = '';
         }
 
+        async function attemptLogin() {
+            const pass = document.getElementById('passwordInput').value;
+            if(!pass) return;
+
+            try {
+                const res = await fetch('/api/api.php?action=login', {
+                    method: 'POST', body: JSON.stringify({ password: pass })
+                });
+                const json = await res.json();
+                
+                if(json.status === 'success') {
+                    closeModal();
+                    isLoggedIn = true;
+                    isEditMode = false;
+                    localStorage.setItem('cheva_auth', 'true');
+                    updateAuthUI(true);
+                    init();
+                } else {
+                    document.getElementById('errorMsg').classList.remove('hidden');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function logout() {
+            fetch('/api/api.php?action=logout').then(() => {
+                localStorage.setItem('cheva_auth', 'false');
+                location.reload();
+            });
+        }
+
+        async function apiCall(action, data = {}) {
+            await fetch(`/api/api.php?action=${action}`, {
+                method: 'POST', body: JSON.stringify(data)
+            });
+            init(); // Refresh data from server to be sure
+        }
+
+        function deleteTask(id) {
+            if(confirm("Yakin hapus?")) {
+                tasks = tasks.filter(t => t.id != id); // Optimistic UI
+                saveLocal();
+                render();
+                apiCall('delete', {id});
+            }
+        }
+
+        // Start App
         init();
     </script>
 </body>
