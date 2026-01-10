@@ -4,103 +4,139 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cheva's To Do List</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
             --accent-color: #8B5CF6;
-            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.6);
             --text-dark: #1e293b;
             --text-gray: #64748b;
+            --radius-xl: 24px;
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f3f4f6; color: var(--text-dark);
-            min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            background-color: #f3f4f6;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
         }
-        /* Background Blobs */
-        .blob { position: fixed; border-radius: 50%; filter: blur(60px); z-index: -1; opacity: 0.5; }
-        .b1 { width: 300px; height: 300px; background: #c084fc; top: -50px; left: -50px; }
-        .b2 { width: 250px; height: 250px; background: #60a5fa; bottom: -50px; right: -50px; }
+
+        /* Blobs Animasi */
+        .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.5; animation: float 10s infinite alternate; }
+        .blob-1 { width: 400px; height: 400px; background: #c084fc; top: -100px; left: -100px; }
+        .blob-2 { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; right: -50px; animation-delay: -5s; }
+        @keyframes float { 0% { transform: translate(0,0); } 100% { transform: translate(40px, 60px); } }
 
         .container {
-            width: 90%; max-width: 500px; background: var(--glass-bg); backdrop-filter: blur(15px);
-            border-radius: 24px; padding: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            width: 90%; max-width: 550px; background: var(--glass-bg); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 2.5rem; position: relative;
         }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .brand { font-family: 'Outfit'; font-size: 1.8rem; font-weight: 800; line-height: 1; }
-        .highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
+
+        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+        .brand-title { font-family: 'Outfit'; font-size: 2rem; font-weight: 800; line-height: 1.1; }
+        .brand-highlight { background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
         .profile-btn { 
-            width: 45px; height: 45px; border-radius: 12px; border: none; cursor: pointer; 
-            background: white; color: var(--text-gray); transition: 0.3s;
+            background: white; border: none; width: 48px; height: 48px; border-radius: 14px; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; 
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-        .profile-btn.active { background: var(--primary-gradient); color: white; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+        .profile-btn.active { background: var(--primary-gradient); color: white; transform: rotate(15deg); box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3); }
 
         /* Login Modal */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal-card { background: white; padding: 2rem; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; }
-        .pass-container { position: relative; margin: 1.5rem 0; }
-        .pass-container input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; outline: none; }
-        .toggle-pass { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.2); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-card { background: white; padding: 2.5rem; border-radius: 30px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.2); }
+        
+        .pass-input-container { position: relative; margin: 1.5rem 0; }
+        .pass-input-container input { width: 100%; padding: 14px 18px; padding-right: 50px; border-radius: 15px; border: 2px solid #f1f5f9; outline: none; background: #f8fafc; font-size: 1rem; }
+        .pass-input-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-gray); font-size: 1.2rem; }
 
-        /* Admin Panel */
-        .admin-panel { background: white; padding: 1rem; border-radius: 15px; margin-bottom: 1.5rem; display: none; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .input-group { display: flex; gap: 8px; margin-bottom: 10px; }
-        .input-group input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-        .btn-add { background: var(--text-dark); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
-        .tools { display: flex; gap: 5px; flex-wrap: wrap; }
-        .btn-tool { font-size: 0.75rem; padding: 6px 10px; border: none; border-radius: 5px; cursor: pointer; }
+        /* Admin Mode Components */
+        .admin-section { display: none; background: rgba(255,255,255,0.5); padding: 1.5rem; border-radius: 20px; margin-bottom: 1.5rem; border: 1px dashed var(--accent-color); animation: slideDown 0.4s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .input-wrapper { display: flex; gap: 10px; margin-bottom: 12px; }
+        .input-wrapper input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #ddd; outline: none; }
+        .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 600; padding: 10px 18px; transition: 0.3s; }
+        .btn-add { background: var(--text-dark); color: white; }
+        .admin-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-sm { font-size: 0.75rem; padding: 6px 12px; background: white; border: 1px solid #eee; }
 
-        /* List */
-        ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-        .todo-item { background: white; padding: 12px 15px; border-radius: 12px; display: flex; align-items: center; transition: 0.2s; }
-        .todo-item.completed { opacity: 0.6; background: #f9fafb; }
-        .todo-item.completed .task-text { text-decoration: line-through; color: #94a3b8; }
-        .task-text { flex: 1; margin: 0 10px; font-weight: 500; }
-        .item-actions { display: none; gap: 5px; } /* Muncul di Edit Mode */
-        .edit-mode .item-actions { display: flex; }
-        .action-btn { cursor: pointer; color: var(--text-gray); }
+        /* List Items */
+        ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+        .todo-item { 
+            background: rgba(255, 255, 255, 0.6); border: 1px solid white; padding: 16px; 
+            border-radius: 18px; display: flex; align-items: center; transition: 0.3s;
+        }
+        .todo-item.completed { opacity: 0.5; }
+        .todo-item.completed .task-text { text-decoration: line-through; }
+        .task-text { flex: 1; margin: 0 15px; font-weight: 500; }
+        
+        /* Checkbox Custom */
+        .checkbox-custom { appearance: none; width: 24px; height: 24px; border: 2px solid #cbd5e1; border-radius: 7px; cursor: pointer; position: relative; transition: 0.2s; }
+        .checkbox-custom:checked { background: var(--accent-color); border-color: var(--accent-color); }
+        .checkbox-custom:checked::after { content: '✓'; color: white; position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; font-size: 14px; }
 
-        .btn-login { background: var(--primary-gradient); color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        /* Item Actions (Hidden in View Mode) */
+        .item-actions { display: none; gap: 8px; }
+        .admin-mode .item-actions { display: flex; }
+        .admin-mode .todo-item { border: 1px solid rgba(139, 92, 246, 0.2); background: white; }
+        .action-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; background: #f8fafc; color: var(--text-gray); }
+
+        .btn-primary { background: var(--primary-gradient); color: white; width: 100%; padding: 14px; border-radius: 15px; border: none; font-weight: 700; cursor: pointer; font-size: 1rem; }
     </style>
 </head>
 <body>
-    <div class="blob b1"></div><div class="blob b2"></div>
+
+    <div class="bg-blob blob-1"></div><div class="bg-blob blob-2"></div>
 
     <div id="loginModal" class="modal">
         <div class="modal-card">
             <h2 style="font-family:'Outfit'">Private Access</h2>
-            <div class="pass-container">
-                <input type="password" id="passInput" placeholder="Masukkan password...">
-                <i class="ph ph-eye toggle-pass" id="eyeIcon" onclick="togglePasswordVisibility()"></i>
+            <p style="color:var(--text-gray); font-size: 0.9rem; margin-top: 5px;">Silakan login untuk melihat list.</p>
+            <div class="pass-input-container">
+                <input type="password" id="loginPass" placeholder="Enter Password..." onkeypress="if(event.key==='Enter') attemptLogin()">
+                <i class="ph ph-eye" id="toggleIcon" onclick="togglePass()"></i>
             </div>
-            <p id="errorMsg" style="color:red; font-size:0.8rem; margin-bottom:10px; display:none;">Password salah!</p>
-            <button class="btn-login" onclick="login()">Buka List</button>
+            <button class="btn-primary" onclick="attemptLogin()">Buka List</button>
+            <div id="loginErr" style="color: #ef4444; font-size: 0.8rem; margin-top: 10px; display: none;">Password salah, coba lagi.</div>
         </div>
     </div>
 
     <div class="container">
         <header>
-            <div class="brand"><span class="highlight">Cheva's</span><br>To Do List</div>
-            <button class="profile-btn" id="profileBtn" onclick="toggleEditMode()">
-                <i class="ph ph-user-gear" style="font-size: 24px;"></i>
+            <div>
+                <div class="brand-title"><span class="brand-highlight">Cheva's</span><br>To Do List</div>
+                <div id="dateDisplay" style="font-size: 0.85rem; color: var(--text-gray); margin-top: 5px;"></div>
+            </div>
+            <button class="profile-btn" id="profileBtn" onclick="toggleAdminMode()">
+                <i class="ph ph-user-focus" style="font-size: 24px;"></i>
             </button>
         </header>
 
-        <div class="admin-panel" id="adminPanel">
-            <div class="input-group">
-                <input type="text" id="taskInput" placeholder="Tugas baru...">
-                <button class="btn-add" onclick="addTask()">Tambah</button>
+        <div class="admin-section" id="adminPanel">
+            <div class="input-wrapper">
+                <input type="text" id="newTaskInput" placeholder="Ketik tugas baru...">
+                <button class="btn btn-add" onclick="addTask()">Tambah</button>
             </div>
-            <div class="tools">
-                <button class="btn-tool" style="background:#dbeafe" onclick="api('uncheck_all')">Uncheck All</button>
-                <button class="btn-tool" style="background:#fef3c7" onclick="api('clear_completed')">Clear Done</button>
-                <button class="btn-tool" style="background:#fee2e2" onclick="api('reset')">Reset</button>
-                <button class="btn-tool" style="background:#f1f5f9" onclick="logout()">Logout</button>
+            <div class="admin-tools">
+                <button class="btn btn-sm" onclick="apiCall('uncheck_all')"><i class="ph ph-arrow-counter-clockwise"></i> Reset Check</button>
+                <button class="btn btn-sm" onclick="apiCall('clear_completed')"><i class="ph ph-broom"></i> Bersihkan Selesai</button>
+                <button class="btn btn-sm" style="color:#ef4444" onclick="logout()"><i class="ph ph-sign-out"></i> Logout</button>
             </div>
         </div>
 
@@ -109,7 +145,7 @@
 
     <script>
         let tasks = [];
-        let isEditMode = false;
+        let isAdminActive = false;
 
         async function init() {
             const res = await fetch('/api/api.php?action=get_all');
@@ -122,37 +158,37 @@
             }
         }
 
-        function togglePasswordVisibility() {
-            const input = document.getElementById('passInput');
-            const icon = document.getElementById('eyeIcon');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.className = 'ph ph-eye-closed toggle-pass';
+        function togglePass() {
+            const inp = document.getElementById('loginPass');
+            const ico = document.getElementById('toggleIcon');
+            if(inp.type === 'password') {
+                inp.type = 'text';
+                ico.className = 'ph ph-eye-closed';
             } else {
-                input.type = 'password';
-                icon.className = 'ph ph-eye toggle-pass';
+                inp.type = 'password';
+                ico.className = 'ph ph-eye';
             }
         }
 
-        async function login() {
-            const pass = document.getElementById('passInput').value;
+        async function attemptLogin() {
+            const pass = document.getElementById('loginPass').value;
             const res = await fetch('/api/api.php?action=login', {
                 method: 'POST',
                 body: JSON.stringify({ password: pass })
             });
             const json = await res.json();
-            if (json.status === 'success') location.reload();
-            else document.getElementById('errorMsg').style.display = 'block';
+            if(json.status === 'success') location.reload();
+            else document.getElementById('loginErr').style.display = 'block';
         }
 
-        function toggleEditMode() {
-            isEditMode = !isEditMode;
-            document.getElementById('adminPanel').style.display = isEditMode ? 'block' : 'none';
-            document.getElementById('profileBtn').classList.toggle('active', isEditMode);
+        function toggleAdminMode() {
+            isAdminActive = !isAdminActive;
+            document.getElementById('adminPanel').style.display = isAdminActive ? 'block' : 'none';
+            document.getElementById('profileBtn').classList.toggle('active', isAdminActive);
             render();
         }
 
-        async function api(action, data = {}) {
+        async function apiCall(action, data = {}) {
             await fetch(`/api/api.php?action=${action}`, {
                 method: 'POST',
                 body: JSON.stringify(data)
@@ -161,16 +197,16 @@
         }
 
         function render() {
-            const list = document.getElementById('todoList');
-            list.className = isEditMode ? 'edit-mode' : '';
-            list.innerHTML = tasks.map((t, i) => `
+            const listEl = document.getElementById('todoList');
+            listEl.className = isAdminActive ? 'admin-mode' : '';
+            listEl.innerHTML = tasks.map((t, i) => `
                 <li class="todo-item ${t.is_completed ? 'completed' : ''}">
-                    <input type="checkbox" ${t.is_completed ? 'checked' : ''} onchange="api('toggle', {id:${t.id}})">
+                    <input type="checkbox" class="checkbox-custom" ${t.is_completed ? 'checked' : ''} onchange="apiCall('toggle', {id:${t.id}})">
                     <span class="task-text">${t.task_name}</span>
                     <div class="item-actions">
-                        <i class="ph ph-arrow-up action-btn" onclick="move(${i}, -1)"></i>
-                        <i class="ph ph-arrow-down action-btn" onclick="move(${i}, 1)"></i>
-                        <i class="ph ph-trash action-btn" style="color:red" onclick="api('delete', {id:${t.id}})"></i>
+                        <div class="action-icon" onclick="move(${i}, -1)"><i class="ph ph-caret-up"></i></div>
+                        <div class="action-icon" onclick="move(${i}, 1)"><i class="ph ph-caret-down"></i></div>
+                        <div class="action-icon" style="color:#ef4444" onclick="apiCall('delete', {id:${t.id}})"><i class="ph ph-trash"></i></div>
                     </div>
                 </li>
             `).join('');
@@ -179,15 +215,19 @@
         function move(idx, dir) {
             if (idx + dir < 0 || idx + dir >= tasks.length) return;
             const t1 = tasks[idx], t2 = tasks[idx + dir];
-            api('swap', { id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order });
+            apiCall('swap', { id1: t1.id, order1: t1.list_order, id2: t2.id, order2: t2.list_order });
         }
 
         function addTask() {
-            const val = document.getElementById('taskInput').value;
-            if (val) { api('add', { task: val }); document.getElementById('taskInput').value = ''; }
+            const inp = document.getElementById('newTaskInput');
+            if(inp.value) { apiCall('add', {task: inp.value}); inp.value = ''; }
         }
 
         function logout() { fetch('/api/api.php?action=logout').then(() => location.reload()); }
+
+        // Set Date
+        const options = { weekday: 'long', day: 'numeric', month: 'long' };
+        document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('id-ID', options);
 
         init();
     </script>
