@@ -59,13 +59,20 @@ function getTasks() {
     
     if (!$tasksJson || $tasksJson === '') {
         $defaultTasks = [
+<<<<<<< HEAD
             ['id' => 1, 'task_name' => 'Selamat datang di Cheva\'s To Do List!', 'list_order' => 1, 'is_completed' => false],
             ['id' => 2, 'task_name' => 'Gunakan panel admin untuk menambah list', 'list_order' => 2, 'is_completed' => false]
+=======
+            ['id' => 1, 'task_name' => '', 'list_order' => 1, 'is_completed' => false],
+            ['id' => 2, 'task_name' => '', 'list_order' => 2, 'is_completed' => false],
+            ['id' => 3, 'task_name' => '', 'list_order' => 3, 'is_completed' => false]
+>>>>>>> 80e1a448e63e593db6e13c6150357fba9d51050a
         ];
         saveTasks($defaultTasks);
         return $defaultTasks;
     }
-    
+
+
     $tasks = json_decode($tasksJson, true);
     if (!is_array($tasks)) $tasks = [];
     
