@@ -37,7 +37,7 @@ function redisCommand($command, $args = []) {
 function getTasks() {
     $tasksJson = redisCommand('GET', ['tasks']);
     if (!$tasksJson || $tasksJson === '') {
-        $default = [['id' => 1, 'task_name' => 'Selamat datang!', 'list_order' => 1, 'is_completed' => false, 'due_date' => null]];
+        $default = [['id' => 1, 'task_name' => 'Selamat datang!', 'list_order' => 1, 'is_completed' => 0, 'due_date' => null, 'pomodoro_count' => 0, 'category_color' => 'transparent']];
         saveTasks($default);
         return $default;
     }
@@ -53,10 +53,13 @@ function saveTasks($tasks) {
 
 function getStreak() {
     $streakJson = redisCommand('GET', ['streak_data']);
-    if (!$streakJson) {
-        return ['current' => 0, 'longest' => 0, 'last_date' => null];
+    if (!$streakJson || $streakJson === '') {
+        $default = ['current' => 0, 'longest' => 0, 'last_date' => null];
+        saveStreak($default);
+        return $default;
     }
-    return json_decode($streakJson, true);
+    $data = json_decode($streakJson, true);
+    return is_array($data) ? $data : ['current' => 0, 'longest' => 0, 'last_date' => null];
 }
 
 function saveStreak($streakData) {
@@ -69,10 +72,10 @@ function refreshStreak($tasks) {
     $today = date('Y-m-d');
     $yesterday = date('Y-m-d', strtotime('-1 day'));
     
-    // Hitung tugas yang selesai hari ini
+    // Hitung tugas yang selesai (is_completed bisa 1 atau true)
     $completedToday = 0;
     foreach ($tasks as $t) {
-        if (!empty($t['is_completed'])) {
+        if (!empty($t['is_completed']) && ($t['is_completed'] == 1 || $t['is_completed'] === true)) {
             $completedToday++;
         }
     }
@@ -91,7 +94,7 @@ function refreshStreak($tasks) {
             $streak['last_date'] = $today;
             
             // Update rekor terpanjang
-            if ($streak['current'] > $streak['longest']) {
+            if ($streak['current'] > ($streak['longest'] ?? 0)) {
                 $streak['longest'] = $streak['current'];
             }
         }
@@ -101,13 +104,12 @@ function refreshStreak($tasks) {
         // Jika hari ini sempat tercatat (semua tugas di-uncheck)
         if ($streak['last_date'] === $today) {
             // Reset ke status kemarin
-            $streak['current'] = max(0, $streak['current'] - 1);
+            $streak['current'] = max(0, ($streak['current'] ?? 0) - 1);
             $streak['last_date'] = $streak['current'] > 0 ? $yesterday : null;
         }
         // Jika sudah lebih dari 1 hari tidak ada aktivitas, reset streak
-        else if ($streak['last_date'] && $streak['last_date'] < $yesterday) {
+        else if (!empty($streak['last_date']) && $streak['last_date'] < $yesterday) {
             $streak['current'] = 0;
-            $streak['last_date'] = null;
         }
     }
     
@@ -124,7 +126,7 @@ function isAdmin() { return isset($_SESSION['is_admin']) && $_SESSION['is_admin'
 switch ($action) {
     case 'get_all':
         if (!isset($_SESSION['logged_in'])) {
-            echo json_encode(['status' => 'locked', 'isAdmin' => false]);
+            echo json_encode(['status' => 'locked', 'isAdmin' => false, 'streak' => ['current' => 0, 'longest' => 0, 'last_date' => null]]);
             exit;
         }
         $tasks = getTasks();
@@ -133,7 +135,10 @@ switch ($action) {
         break;
 
     case 'get_streak':
-        if (!isset($_SESSION['logged_in'])) exit;
+        if (!isset($_SESSION['logged_in'])) {
+            echo json_encode(['status' => 'success', 'streak' => ['current' => 0, 'longest' => 0, 'last_date' => null]]);
+            exit;
+        }
         echo json_encode(['status' => 'success', 'streak' => refreshStreak(getTasks())]);
         break;
 
@@ -170,20 +175,20 @@ switch ($action) {
 
         if ($action === 'add') {
             $max = empty($tasks) ? 0 : max(array_column($tasks, 'list_order'));
-            $newTask = ['id' => time(), 'task_name' => trim($input['task']), 'list_order' => $max + 1, 'is_completed' => false, 'category_color' => $input['color'] ?? 'transparent', 'due_date' => $input['due_date'] ?? null, 'pomodoro_count' => 0];
+            $newTask = ['id' => time(), 'task_name' => trim($input['task']), 'list_order' => $max + 1, 'is_completed' => 0, 'category_color' => $input['color'] ?? 'transparent', 'due_date' => $input['due_date'] ?? null, 'pomodoro_count' => 0];
             $tasks[] = $newTask;
             $message = 'Tugas berhasil ditambahkan!';
         } elseif ($action === 'delete') {
             $tasks = array_values(array_filter($tasks, function($t) use ($input) { return $t['id'] != $input['id']; }));
             $message = 'Tugas berhasil dihapus!';
         } elseif ($action === 'reset') {
-            $tasks = [['id' => 1, 'task_name' => 'List direset', 'list_order' => 1, 'is_completed' => false, 'due_date' => null]];
+            $tasks = [['id' => 1, 'task_name' => 'List direset', 'list_order' => 1, 'is_completed' => 0, 'due_date' => null, 'pomodoro_count' => 0, 'category_color' => 'transparent']];
             $message = 'List berhasil direset!';
         } elseif ($action === 'clear_completed') {
-            $tasks = array_values(array_filter($tasks, function($t) { return !$t['is_completed']; }));
+            $tasks = array_values(array_filter($tasks, function($t) { return empty($t['is_completed']) || $t['is_completed'] == 0; }));
             $message = 'Tugas selesai berhasil dibersihkan!';
         } elseif ($action === 'uncheck_all') {
-            foreach ($tasks as &$t) $t['is_completed'] = false;
+            foreach ($tasks as &$t) $t['is_completed'] = 0;
             $message = 'Semua tugas di-uncheck!';
         } elseif ($action === 'swap') {
             foreach ($tasks as &$t) {
@@ -214,7 +219,7 @@ switch ($action) {
         
         foreach ($tasks as &$t) { 
             if ($t['id'] == $input['id']) {
-                $t['is_completed'] = !$t['is_completed'];
+                $t['is_completed'] = empty($t['is_completed']) ? 1 : 0;
             } 
         }
         saveTasks($tasks);
@@ -235,7 +240,7 @@ switch ($action) {
         break;
 
     default:
-        echo json_encode(['status' => 'error']);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
         break;
 }
 ?>
