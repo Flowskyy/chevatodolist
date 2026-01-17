@@ -73,15 +73,15 @@ function refreshStreak($tasks) {
     $yesterday = date('Y-m-d', strtotime('-1 day'));
     
     // Hitung tugas yang selesai (is_completed bisa 1 atau true)
-    $completedToday = 0;
+    $completedCount = 0;
     foreach ($tasks as $t) {
         if (!empty($t['is_completed']) && ($t['is_completed'] == 1 || $t['is_completed'] === true)) {
-            $completedToday++;
+            $completedCount++;
         }
     }
     
-    // CASE 1: Ada tugas yang selesai
-    if ($completedToday > 0) {
+    // CASE 1: Ada tugas yang selesai (minimal 1)
+    if ($completedCount > 0) {
         // Jika hari ini belum tercatat
         if ($streak['last_date'] !== $today) {
             // Cek apakah kemarin ada aktivitas (streak berlanjut)
@@ -98,18 +98,23 @@ function refreshStreak($tasks) {
                 $streak['longest'] = $streak['current'];
             }
         }
+        // Jika hari ini sudah tercatat, streak tetap (tidak berubah)
     } 
-    // CASE 2: Tidak ada tugas selesai
+    // CASE 2: TIDAK ADA tugas yang selesai (0 completed)
     else {
-        // Jika hari ini sempat tercatat (semua tugas di-uncheck)
+        // Jika hari ini tercatat tapi sekarang 0 completed = dibatalkan semua
         if ($streak['last_date'] === $today) {
-            // Reset ke status kemarin
-            $streak['current'] = max(0, ($streak['current'] ?? 0) - 1);
+            // Batalkan hari ini, kembali ke streak kemarin
+            if ($streak['current'] > 0) {
+                $streak['current']--;
+            }
+            // Set last_date ke kemarin jika masih ada streak, null jika sudah 0
             $streak['last_date'] = $streak['current'] > 0 ? $yesterday : null;
         }
-        // Jika sudah lebih dari 1 hari tidak ada aktivitas, reset streak
+        // Jika sudah >1 hari tidak ada aktivitas, reset streak ke 0
         else if (!empty($streak['last_date']) && $streak['last_date'] < $yesterday) {
             $streak['current'] = 0;
+            $streak['last_date'] = null;
         }
     }
     
