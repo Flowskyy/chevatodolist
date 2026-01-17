@@ -37,12 +37,23 @@ function redisCommand($command, $args = []) {
 function getTasks() {
     $tasksJson = redisCommand('GET', ['tasks']);
     if (!$tasksJson || $tasksJson === '') {
-        $default = [['id' => 1, 'task_name' => 'Selamat datang!', 'list_order' => 1, 'is_completed' => 0, 'due_date' => null, 'pomodoro_count' => 0, 'category_color' => 'transparent']];
+        $default = [['id' => 1, 'task_name' => 'Selamat datang!', 'list_order' => 1, 'is_completed' => 0, 'due_date' => null, 'pomodoro_count' => 0, 'category_color' => 'transparent', 'completed_date' => null]];
         saveTasks($default);
         return $default;
     }
     $tasks = json_decode($tasksJson, true);
     if (!is_array($tasks)) $tasks = [];
+    
+    // Migration: Add completed_date for old tasks
+    $needsSave = false;
+    foreach ($tasks as &$t) {
+        if (!isset($t['completed_date'])) {
+            $t['completed_date'] = null; // Old tasks don't count for today's streak
+            $needsSave = true;
+        }
+    }
+    if ($needsSave) saveTasks($tasks);
+    
     usort($tasks, function($a, $b) { return ($a['list_order'] ?? 0) - ($b['list_order'] ?? 0); });
     return $tasks;
 }
@@ -82,16 +93,19 @@ function refreshStreak($tasks) {
         saveStreak($streak);
     }
     
-    // Hitung TOTAL tugas yang selesai
-    $totalCompleted = 0;
+    // Hitung HANYA tugas yang di-complete HARI INI
+    $completedToday = 0;
     foreach ($tasks as $t) {
         if (!empty($t['is_completed']) && ($t['is_completed'] == 1 || $t['is_completed'] === true)) {
-            $totalCompleted++;
+            // Cek apakah completed_date = hari ini
+            if (isset($t['completed_date']) && $t['completed_date'] === $today) {
+                $completedToday++;
+            }
         }
     }
     
-    // CASE 1: Ada tugas yang selesai (minimal 1)
-    if ($totalCompleted > 0) {
+    // CASE 1: Ada tugas yang di-complete HARI INI (minimal 1)
+    if ($completedToday > 0) {
         // Sub-case A: Belum ada streak sama sekali (first time)
         if (empty($streak['last_date'])) {
             $streak['current'] = 1;
@@ -117,9 +131,9 @@ function refreshStreak($tasks) {
             // Longest tetap dipertahankan
         }
     } 
-    // CASE 2: TIDAK ADA tugas yang selesai (0 completed)
+    // CASE 2: TIDAK ADA tugas yang di-complete hari ini (0 completed today)
     else {
-        // Jika last_date adalah hari ini, berarti baru saja di-uncheck semua
+        // Jika last_date adalah hari ini, berarti baru saja di-uncheck semua task hari ini
         if ($streak['last_date'] === $today) {
             // Batalkan hari ini, mundur ke kemarin
             $streak['current'] = max(0, $streak['current'] - 1);
@@ -237,9 +251,20 @@ switch ($action) {
         if (!isset($_SESSION['logged_in'])) exit;
         $tasks = getTasks();
         
+        date_default_timezone_set('Asia/Jakarta');
+        $today = date('Y-m-d');
+        
         foreach ($tasks as &$t) { 
             if ($t['id'] == $input['id']) {
-                $t['is_completed'] = empty($t['is_completed']) ? 1 : 0;
+                $wasCompleted = !empty($t['is_completed']) && ($t['is_completed'] == 1 || $t['is_completed'] === true);
+                $t['is_completed'] = $wasCompleted ? 0 : 1;
+                
+                // Track completion date
+                if ($t['is_completed'] == 1) {
+                    $t['completed_date'] = $today; // Set tanggal saat di-check
+                } else {
+                    $t['completed_date'] = null; // Hapus tanggal saat di-uncheck
+                }
             } 
         }
         saveTasks($tasks);
