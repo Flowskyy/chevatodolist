@@ -89,28 +89,57 @@ switch ($action) {
     case 'clear_completed':
     case 'uncheck_all':
     case 'swap':
+    case 'reorder':
         if (!isAdmin()) { echo json_encode(['status' => 'error', 'message' => 'Unauthorized']); exit; }
         
         $tasks = getTasks();
         if ($action === 'add') {
             $max = empty($tasks) ? 0 : max(array_column($tasks, 'list_order'));
-            $tasks[] = ['id' => time(), 'task_name' => trim($input['task']), 'list_order' => $max + 1, 'is_completed' => false];
+            $newTask = [
+                'id' => time(), 
+                'task_name' => trim($input['task']), 
+                'list_order' => $max + 1, 
+                'is_completed' => false,
+                'category_color' => $input['color'] ?? 'transparent'
+            ];
+            $tasks[] = $newTask;
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Tugas berhasil ditambahkan!']);
         } elseif ($action === 'delete') {
             $tasks = array_values(array_filter($tasks, function($t) use ($input) { return $t['id'] != $input['id']; }));
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Tugas berhasil dihapus!']);
         } elseif ($action === 'reset') {
             $tasks = [['id' => 1, 'task_name' => 'List direset', 'list_order' => 1, 'is_completed' => false]];
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'List berhasil direset!']);
         } elseif ($action === 'clear_completed') {
             $tasks = array_values(array_filter($tasks, function($t) { return !$t['is_completed']; }));
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Tugas selesai berhasil dibersihkan!']);
         } elseif ($action === 'uncheck_all') {
             foreach ($tasks as &$t) $t['is_completed'] = false;
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Semua tugas di-uncheck!']);
         } elseif ($action === 'swap') {
             foreach ($tasks as &$t) {
                 if ($t['id'] == $input['id1']) $t['list_order'] = $input['order2'];
                 else if ($t['id'] == $input['id2']) $t['list_order'] = $input['order1'];
             }
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'data' => getTasks()]);
+        } elseif ($action === 'reorder') {
+            // Update semua list_order berdasarkan array baru
+            $newOrder = $input['order'] ?? [];
+            foreach ($tasks as &$t) {
+                $index = array_search($t['id'], $newOrder);
+                if ($index !== false) {
+                    $t['list_order'] = $index;
+                }
+            }
+            saveTasks($tasks);
+            echo json_encode(['status' => 'success', 'data' => getTasks()]);
         }
-        saveTasks($tasks);
-        echo json_encode(['status' => 'success']);
         break;
 
     case 'toggle':
@@ -118,7 +147,7 @@ switch ($action) {
         $tasks = getTasks();
         foreach ($tasks as &$t) { if ($t['id'] == $input['id']) $t['is_completed'] = !$t['is_completed']; }
         saveTasks($tasks);
-        echo json_encode(['status' => 'success']);
+        echo json_encode(['status' => 'success', 'data' => getTasks()]);
         break;
 
     default:
