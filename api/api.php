@@ -76,12 +76,6 @@ function refreshStreak($tasks) {
     $today = date('Y-m-d');
     $yesterday = date('Y-m-d', strtotime('-1 day'));
     
-    // Debug log
-    error_log("=== REFRESH STREAK DEBUG ===");
-    error_log("Today: " . $today);
-    error_log("Yesterday: " . $yesterday);
-    error_log("Streak Before: " . json_encode($streak));
-    
     // Hitung tugas yang selesai (is_completed bisa 1 atau true)
     $completedCount = 0;
     foreach ($tasks as $t) {
@@ -90,8 +84,6 @@ function refreshStreak($tasks) {
         }
     }
     
-    error_log("Completed Count: " . $completedCount);
-    
     // CASE 1: Ada tugas yang selesai (minimal 1)
     if ($completedCount > 0) {
         // Jika hari ini belum tercatat
@@ -99,11 +91,9 @@ function refreshStreak($tasks) {
             // Cek apakah kemarin ada aktivitas (streak berlanjut)
             if ($streak['last_date'] === $yesterday) {
                 $streak['current']++;
-                error_log("Streak continued from yesterday");
             } else {
                 // Mulai streak baru
                 $streak['current'] = 1;
-                error_log("New streak started");
             }
             $streak['last_date'] = $today;
             
@@ -111,15 +101,12 @@ function refreshStreak($tasks) {
             if ($streak['current'] > ($streak['longest'] ?? 0)) {
                 $streak['longest'] = $streak['current'];
             }
-        } else {
-            error_log("Already recorded today, no change");
         }
     } 
     // CASE 2: TIDAK ADA tugas yang selesai (0 completed)
     else {
         // Jika hari ini tercatat tapi sekarang 0 completed = dibatalkan semua
         if ($streak['last_date'] === $today) {
-            error_log("Unchecked all tasks today - rolling back");
             // Batalkan hari ini, kembali ke streak kemarin
             if ($streak['current'] > 0) {
                 $streak['current']--;
@@ -129,15 +116,10 @@ function refreshStreak($tasks) {
         }
         // Jika sudah >1 hari tidak ada aktivitas, reset streak ke 0
         else if (!empty($streak['last_date']) && $streak['last_date'] < $yesterday) {
-            error_log("More than 1 day inactive - resetting");
             $streak['current'] = 0;
             $streak['last_date'] = null;
-        } else {
-            error_log("No tasks completed, but not today's record - no change");
         }
     }
-    
-    error_log("Streak After: " . json_encode($streak));
     
     saveStreak($streak);
     return $streak;
@@ -243,24 +225,13 @@ switch ($action) {
         if (!isset($_SESSION['logged_in'])) exit;
         $tasks = getTasks();
         
-        error_log("=== TOGGLE ACTION ===");
-        error_log("Input ID: " . ($input['id'] ?? 'none'));
-        error_log("Tasks before toggle: " . json_encode($tasks));
-        
         foreach ($tasks as &$t) { 
             if ($t['id'] == $input['id']) {
                 $t['is_completed'] = empty($t['is_completed']) ? 1 : 0;
-                error_log("Toggled task ID " . $t['id'] . " to: " . $t['is_completed']);
             } 
         }
         saveTasks($tasks);
-        
-        error_log("Tasks after toggle: " . json_encode($tasks));
-        
         $streak = refreshStreak($tasks);
-        
-        error_log("Final streak: " . json_encode($streak));
-        
         echo json_encode(['status' => 'success', 'data' => getTasks(), 'streak' => $streak]);
         break;
 
