@@ -102,14 +102,7 @@ function refreshStreak($tasks) {
         }
         // Sub-case C: Last date adalah HARI INI (already counted today)
         else if ($streak['last_date'] === $today) {
-            // Jika current = 0 tapi last_date = today, berarti data corrupt, fix it
-            if ($streak['current'] == 0) {
-                $streak['current'] = 1;
-                if ($streak['current'] > ($streak['longest'] ?? 0)) {
-                    $streak['longest'] = $streak['current'];
-                }
-            }
-            // Otherwise, do nothing (sudah tercatat hari ini)
+            // Do nothing - sudah tercatat hari ini
         }
         // Sub-case D: Last date adalah >1 hari yang lalu (streak broken, restart)
         else {
@@ -151,7 +144,7 @@ switch ($action) {
             exit;
         }
         $tasks = getTasks();
-        $streak = refreshStreak($tasks); // Selalu refresh streak
+        $streak = getStreak(); // Hanya GET, jangan refresh!
         echo json_encode(['status' => 'success', 'data' => $tasks, 'isAdmin' => isAdmin(), 'streak' => $streak]);
         break;
 
