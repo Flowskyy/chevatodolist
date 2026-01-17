@@ -38,7 +38,6 @@ function redisCommand($command, $args = []) {
 function getTasks() {
     $tasksJson = redisCommand('GET', ['tasks']);
     if (!$tasksJson || $tasksJson === '') {
-        // Default updated with due_date
         $default = [['id' => 1, 'task_name' => 'Selamat datang!', 'list_order' => 1, 'is_completed' => false, 'due_date' => null]];
         saveTasks($default);
         return $default;
@@ -53,7 +52,6 @@ function saveTasks($tasks) {
     return redisCommand('SET', ['tasks', json_encode($tasks)]);
 }
 
-// --- FUNGSI TAMBAHAN DARI SCRIPT BAWAH (STREAK) ---
 function getStreak() {
     $streakJson = redisCommand('GET', ['streak_data']);
     if (!$streakJson) {
@@ -66,37 +64,55 @@ function saveStreak($streakData) {
     return redisCommand('SET', ['streak_data', json_encode($streakData)]);
 }
 
-function updateStreak() {
+// --- LOGIKA STREAK BARU YANG LEBIH CERDAS ---
+function refreshStreak($tasks) {
     $streak = getStreak();
     $today = date('Y-m-d');
-    $lastDate = $streak['last_date'];
-    
-    if ($lastDate === $today) {
-        // Already updated today
-        return $streak;
-    }
-    
-    if ($lastDate === null) {
-        // First time
-        $streak = ['current' => 1, 'longest' => 1, 'last_date' => $today];
-    } else {
-        $yesterday = date('Y-m-d', strtotime('-1 day'));
-        if ($lastDate === $yesterday) {
-            // Continue streak
-            $streak['current']++;
-            $streak['longest'] = max($streak['longest'], $streak['current']);
-            $streak['last_date'] = $today;
-        } else {
-            // Streak broken
-            $streak['current'] = 1;
-            $streak['last_date'] = $today;
+    $yesterday = date('Y-m-d', strtotime('-1 day'));
+
+    // Hitung berapa tugas yang SELESAI saat ini
+    $completedCount = 0;
+    foreach ($tasks as $t) {
+        if (!empty($t['is_completed'])) {
+            $completedCount++;
         }
     }
-    
+
+    // KASUS A: Ada tugas selesai (> 0)
+    if ($completedCount > 0) {
+        // Cek apakah hari ini SUDAH dicatat?
+        if ($streak['last_date'] !== $today) {
+            // Belum dicatat, mari kita update
+            if ($streak['last_date'] === $yesterday) {
+                // Lanjut streak dari kemarin
+                $streak['current']++;
+            } else {
+                // Streak putus atau baru mulai
+                $streak['current'] = 1;
+            }
+            // Update tanggal terakhir ke hari ini
+            $streak['last_date'] = $today;
+            
+            // Update rekor terpanjang
+            if ($streak['current'] > $streak['longest']) {
+                $streak['longest'] = $streak['current'];
+            }
+        }
+    } 
+    // KASUS B: Tidak ada tugas selesai (0), TAPI hari ini sempat tercatat (alias dibatalkan)
+    else {
+        if ($streak['last_date'] === $today) {
+            // Batalkan streak hari ini (mundur ke status kemarin)
+            $streak['current'] = max(0, $streak['current'] - 1);
+            
+            // Kembalikan last_date ke kemarin (agar statusnya jadi "belum mengerjakan hari ini")
+            $streak['last_date'] = $yesterday; 
+        }
+    }
+
     saveStreak($streak);
     return $streak;
 }
-// --------------------------------------------------
 
 $action = $_GET['action'] ?? '';
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -110,7 +126,6 @@ switch ($action) {
             echo json_encode(['status' => 'locked', 'isAdmin' => false]);
             exit;
         }
-        // Ditambahkan: Ambil data streak juga
         $streak = getStreak();
         echo json_encode([
             'status' => 'success', 
@@ -120,7 +135,7 @@ switch ($action) {
         ]);
         break;
 
-    case 'get_streak': // Case baru
+    case 'get_streak':
         if (!isset($_SESSION['logged_in'])) exit;
         echo json_encode(['status' => 'success', 'streak' => getStreak()]);
         break;
@@ -148,10 +163,12 @@ switch ($action) {
     case 'uncheck_all':
     case 'swap':
     case 'reorder':
-    case 'update_due_date': // Case baru
+    case 'update_due_date':
         if (!isAdmin()) { echo json_encode(['status' => 'error', 'message' => 'Unauthorized']); exit; }
         
         $tasks = getTasks();
+        $message = '';
+
         if ($action === 'add') {
             $max = empty($tasks) ? 0 : max(array_column($tasks, 'list_order'));
             $newTask = [
@@ -159,38 +176,29 @@ switch ($action) {
                 'task_name' => trim($input['task']), 
                 'list_order' => $max + 1, 
                 'is_completed' => false,
-                // Ditambahkan: Color, Due Date, Pomodoro
                 'category_color' => $input['color'] ?? 'transparent',
                 'due_date' => $input['due_date'] ?? null,
                 'pomodoro_count' => 0
             ];
             $tasks[] = $newTask;
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Tugas berhasil ditambahkan!']);
+            $message = 'Tugas berhasil ditambahkan!';
         } elseif ($action === 'delete') {
             $tasks = array_values(array_filter($tasks, function($t) use ($input) { return $t['id'] != $input['id']; }));
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Tugas berhasil dihapus!']);
+            $message = 'Tugas berhasil dihapus!';
         } elseif ($action === 'reset') {
-            // Updated reset default
             $tasks = [['id' => 1, 'task_name' => 'List direset', 'list_order' => 1, 'is_completed' => false, 'due_date' => null]];
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'List berhasil direset!']);
+            $message = 'List berhasil direset!';
         } elseif ($action === 'clear_completed') {
             $tasks = array_values(array_filter($tasks, function($t) { return !$t['is_completed']; }));
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Tugas selesai berhasil dibersihkan!']);
+            $message = 'Tugas selesai berhasil dibersihkan!';
         } elseif ($action === 'uncheck_all') {
             foreach ($tasks as &$t) $t['is_completed'] = false;
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Semua tugas di-uncheck!']);
+            $message = 'Semua tugas di-uncheck!';
         } elseif ($action === 'swap') {
             foreach ($tasks as &$t) {
                 if ($t['id'] == $input['id1']) $t['list_order'] = $input['order2'];
                 else if ($t['id'] == $input['id2']) $t['list_order'] = $input['order1'];
             }
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks()]);
         } elseif ($action === 'reorder') {
             $newOrder = $input['order'] ?? [];
             foreach ($tasks as &$t) {
@@ -199,45 +207,46 @@ switch ($action) {
                     $t['list_order'] = $index;
                 }
             }
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks()]);
-        } elseif ($action === 'update_due_date') { // Logika baru
+        } elseif ($action === 'update_due_date') {
             foreach ($tasks as &$t) {
                 if ($t['id'] == $input['id']) {
                     $t['due_date'] = $input['due_date'];
                 }
             }
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Deadline berhasil diupdate!']);
+            $message = 'Deadline berhasil diupdate!';
         }
+        
+        saveTasks($tasks);
+        
+        // Cek ulang streak (penting untuk delete/uncheck_all/clear_completed)
+        $streak = refreshStreak($tasks);
+        
+        echo json_encode([
+            'status' => 'success', 
+            'data' => getTasks(), 
+            'message' => $message,
+            'streak' => $streak
+        ]);
         break;
 
     case 'toggle':
         if (!isset($_SESSION['logged_in'])) exit;
         $tasks = getTasks();
-        $wasCompleted = false; // Flag untuk streak
         
         foreach ($tasks as &$t) { 
             if ($t['id'] == $input['id']) {
                 $t['is_completed'] = !$t['is_completed'];
-                // Cek jika baru saja diselesaikan
-                if ($t['is_completed']) {
-                    $wasCompleted = true;
-                }
             } 
         }
         saveTasks($tasks);
         
-        // Update streak logic
-        $streak = getStreak();
-        if ($wasCompleted) {
-            $streak = updateStreak();
-        }
-
+        // Panggil fungsi refreshStreak yang pintar
+        $streak = refreshStreak($tasks);
+        
         echo json_encode(['status' => 'success', 'data' => getTasks(), 'streak' => $streak]);
         break;
 
-    case 'pomodoro_complete': // Case baru
+    case 'pomodoro_complete':
         if (!isset($_SESSION['logged_in'])) exit;
         $tasks = getTasks();
         foreach ($tasks as &$t) {
