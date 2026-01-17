@@ -33,6 +33,7 @@
                         'slide-up': 'slideInUp 0.4s ease backwards',
                         'slide-down': 'slideDown 0.3s ease',
                         'bounce-in': 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -64,6 +65,12 @@
         /* Hide Scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Pomodoro Timer Ring */
+        .timer-ring {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex justify-center items-start pt-16 pb-20 transition-colors duration-300 mode-teaser overflow-x-hidden selection:bg-accent selection:text-white">
@@ -74,6 +81,51 @@
     <audio id="sound-check" src="https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3"></audio>
     <audio id="sound-complete" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
     <audio id="sound-cheer" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
+    <audio id="sound-timer" src="https://assets.mixkit.co/sfx/preview/mixkit-clock-countdown-bleeps-916.mp3"></audio>
+    <audio id="sound-timer-end" src="https://assets.mixkit.co/sfx/preview/mixkit-bell-notification-933.mp3"></audio>
+
+    <!-- Pomodoro Timer Modal -->
+    <div id="pomodoroModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden justify-center items-center p-4">
+        <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border border-white/20 animate-pop">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="font-display text-xl font-bold">🍅 Pomodoro Timer</h2>
+                <button onclick="closePomodoroModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center transition">
+                    <i class="ph-bold ph-x text-xl text-slate-400"></i>
+                </button>
+            </div>
+            
+            <div class="relative w-48 h-48 mx-auto mb-6">
+                <svg class="w-full h-full">
+                    <circle cx="96" cy="96" r="88" fill="none" stroke="currentColor" stroke-width="8" class="text-slate-200 dark:text-slate-700"/>
+                    <circle id="timerCircle" cx="96" cy="96" r="88" fill="none" stroke="currentColor" stroke-width="8" 
+                        class="text-accent timer-ring transition-all duration-1000" 
+                        stroke-dasharray="552.92" stroke-dashoffset="0" stroke-linecap="round"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <p id="timerDisplay" class="font-display text-4xl font-bold">25:00</p>
+                    <p id="timerTask" class="text-xs text-slate-500 mt-2 max-w-[150px] truncate"></p>
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-center mb-4">
+                <button id="timerStartBtn" onclick="startPomodoro()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold shadow-lg hover:shadow-indigo-500/30 transition">
+                    <i class="ph-bold ph-play"></i> Start
+                </button>
+                <button id="timerPauseBtn" onclick="pausePomodoro()" class="hidden px-6 py-3 rounded-xl bg-amber-500 text-white font-bold shadow-lg transition">
+                    <i class="ph-bold ph-pause"></i> Pause
+                </button>
+                <button onclick="resetPomodoro()" class="px-6 py-3 rounded-xl bg-slate-100 dark:bg-slate-700 font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+                    <i class="ph-bold ph-arrow-counter-clockwise"></i>
+                </button>
+            </div>
+
+            <div class="flex gap-2 justify-center text-xs">
+                <button onclick="setTimer(25)" class="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 font-semibold hover:bg-indigo-100 transition">25m</button>
+                <button onclick="setTimer(15)" class="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-200 transition">15m</button>
+                <button onclick="setTimer(5)" class="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-200 transition">5m</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Motivational Toast -->
     <div id="motivationToast" class="fixed top-8 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 opacity-0 pointer-events-none transition-all duration-500 transform -translate-y-4 flex items-center gap-3 max-w-md">
@@ -90,6 +142,15 @@
         <div>
             <p class="font-bold text-sm text-slate-800 dark:text-slate-100">Berhasil!</p>
             <p id="successMessage" class="text-xs text-slate-600 dark:text-slate-400"></p>
+        </div>
+    </div>
+
+    <!-- Streak Achievement Toast -->
+    <div id="streakToast" class="fixed top-8 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 opacity-0 pointer-events-none transition-all duration-500 transform -translate-y-4 flex items-center gap-3 max-w-md">
+        <i class="ph-fill ph-fire text-3xl animate-bounce-in"></i>
+        <div>
+            <p class="font-bold text-sm">Streak Updated! 🔥</p>
+            <p id="streakText" class="text-xs opacity-90"></p>
         </div>
     </div>
 
@@ -118,6 +179,21 @@
             <button onclick="closeFocusSelector()" class="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-700 font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition">
                 Batal
             </button>
+        </div>
+    </div>
+
+    <!-- Due Date Picker Modal -->
+    <div id="dueDateModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden justify-center items-center p-4">
+        <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-white/20 animate-pop">
+            <h2 class="font-display text-xl font-bold mb-4">Set Deadline</h2>
+            <p id="dueDateTaskName" class="text-sm text-slate-500 mb-4"></p>
+            
+            <input type="date" id="dueDateInput" class="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 outline-none focus:border-accent transition-colors mb-4">
+            
+            <div class="flex gap-3">
+                <button onclick="closeDueDateModal()" class="px-6 py-3 rounded-xl bg-slate-100 dark:bg-slate-700 font-semibold text-slate-500 hover:bg-slate-200 transition">Batal</button>
+                <button onclick="saveDueDate()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold shadow-lg hover:shadow-indigo-500/30 transition">Simpan</button>
+            </div>
         </div>
     </div>
 
@@ -175,6 +251,23 @@
                     </button>
                 </div>
             </header>
+
+            <!-- Streak Counter -->
+            <div id="streakBadge" class="mb-6 bg-gradient-to-r from-orange-500 to-red-500 p-4 rounded-2xl text-white flex items-center justify-between shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onclick="showStreakDetail()">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center animate-pulse-slow">
+                        <i class="ph-fill ph-fire text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold opacity-90">Current Streak</p>
+                        <p class="font-display text-2xl font-bold"><span id="currentStreak">0</span> days 🔥</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-semibold opacity-90">Best</p>
+                    <p class="font-bold text-lg"><span id="longestStreak">0</span> days</p>
+                </div>
+            </div>
 
             <div class="mb-6">
                 <div class="flex justify-between text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">
@@ -267,11 +360,24 @@
         let isFocusMode = false;
         let focusTaskId = null;
         let sortableInstance = null;
+        let streakData = {current: 0, longest: 0, last_date: null};
+        
+        // Pomodoro Timer State
+        let pomodoroInterval = null;
+        let pomodoroSeconds = 1500; // 25 minutes
+        let pomodoroTotalSeconds = 1500;
+        let pomodoroTaskId = null;
+        let isPomodoroRunning = false;
+        
+        // Due Date Modal State
+        let currentDueDateTaskId = null;
         
         // Audio Objects
         const soundCheck = document.getElementById('sound-check');
         const soundComplete = document.getElementById('sound-complete');
         const soundCheer = document.getElementById('sound-cheer');
+        const soundTimer = document.getElementById('sound-timer');
+        const soundTimerEnd = document.getElementById('sound-timer-end');
 
         const quotes = [
             "Mulai dari yang kecil, selesaikan yang besar.",
@@ -291,6 +397,232 @@
             "Kamu makin dekat sama goals! 💎",
             "Small steps, big results! ✨"
         ];
+
+        // --- POMODORO TIMER FUNCTIONS ---
+        function openPomodoroModal(taskId) {
+            const task = tasks.find(t => t.id == taskId);
+            if(!task) return;
+            
+            pomodoroTaskId = taskId;
+            document.getElementById('timerTask').innerText = task.task_name;
+            document.getElementById('pomodoroModal').classList.remove('hidden');
+            document.getElementById('pomodoroModal').classList.add('flex');
+        }
+
+        function closePomodoroModal() {
+            if(isPomodoroRunning) {
+                if(!confirm('Timer masih berjalan. Yakin mau tutup?')) return;
+            }
+            pausePomodoro();
+            resetPomodoro();
+            document.getElementById('pomodoroModal').classList.add('hidden');
+            document.getElementById('pomodoroModal').classList.remove('flex');
+        }
+
+        function setTimer(minutes) {
+            if(isPomodoroRunning) return;
+            pomodoroSeconds = minutes * 60;
+            pomodoroTotalSeconds = minutes * 60;
+            updateTimerDisplay();
+            updateTimerCircle();
+        }
+
+        function startPomodoro() {
+            if(isPomodoroRunning) return;
+            
+            isPomodoroRunning = true;
+            document.getElementById('timerStartBtn').classList.add('hidden');
+            document.getElementById('timerPauseBtn').classList.remove('hidden');
+            
+            soundTimer.play();
+            
+            pomodoroInterval = setInterval(() => {
+                pomodoroSeconds--;
+                updateTimerDisplay();
+                updateTimerCircle();
+                
+                if(pomodoroSeconds <= 0) {
+                    completePomodoro();
+                }
+            }, 1000);
+        }
+
+        function pausePomodoro() {
+            if(!isPomodoroRunning) return;
+            
+            isPomodoroRunning = false;
+            clearInterval(pomodoroInterval);
+            document.getElementById('timerStartBtn').classList.remove('hidden');
+            document.getElementById('timerPauseBtn').classList.add('hidden');
+        }
+
+        function resetPomodoro() {
+            pausePomodoro();
+            pomodoroSeconds = pomodoroTotalSeconds;
+            updateTimerDisplay();
+            updateTimerCircle();
+        }
+
+        function completePomodoro() {
+            pausePomodoro();
+            soundTimerEnd.play();
+            
+            confetti({
+                particleCount: 50,
+                spread: 60,
+                origin: { y: 0.6 }
+            });
+            
+            // Update pomodoro count
+            if(pomodoroTaskId) {
+                fetch('/api/api.php?action=pomodoro_complete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: pomodoroTaskId})
+                }).then(res => res.json()).then(json => {
+                    if(json.status === 'success') {
+                        tasks = json.data;
+                        saveLocal();
+                        render();
+                    }
+                });
+            }
+            
+            alert('🎉 Pomodoro selesai! Great work, Cheva!');
+            resetPomodoro();
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(pomodoroSeconds / 60);
+            const seconds = pomodoroSeconds % 60;
+            document.getElementById('timerDisplay').innerText = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerCircle() {
+            const progress = pomodoroSeconds / pomodoroTotalSeconds;
+            const circumference = 2 * Math.PI * 88;
+            const offset = circumference * (1 - progress);
+            document.getElementById('timerCircle').style.strokeDashoffset = offset;
+        }
+
+        // --- DUE DATE FUNCTIONS ---
+        function openDueDateModal(taskId) {
+            const task = tasks.find(t => t.id == taskId);
+            if(!task) return;
+            
+            currentDueDateTaskId = taskId;
+            document.getElementById('dueDateTaskName').innerText = task.task_name;
+            
+            if(task.due_date) {
+                document.getElementById('dueDateInput').value = task.due_date;
+            } else {
+                document.getElementById('dueDateInput').value = '';
+            }
+            
+            document.getElementById('dueDateModal').classList.remove('hidden');
+            document.getElementById('dueDateModal').classList.add('flex');
+        }
+
+        function closeDueDateModal() {
+            currentDueDateTaskId = null;
+            document.getElementById('dueDateModal').classList.add('hidden');
+            document.getElementById('dueDateModal').classList.remove('flex');
+        }
+
+        function saveDueDate() {
+            const dueDate = document.getElementById('dueDateInput').value;
+            
+            if(!currentDueDateTaskId) return;
+            
+            // Update local
+            const task = tasks.find(t => t.id == currentDueDateTaskId);
+            if(task) {
+                task.due_date = dueDate || null;
+                saveLocal();
+                render();
+            }
+            
+            // Sync to server
+            fetch('/api/api.php?action=update_due_date', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    id: currentDueDateTaskId,
+                    due_date: dueDate || null
+                })
+            }).then(res => res.json()).then(json => {
+                if(json.status === 'success') {
+                    tasks = json.data;
+                    saveLocal();
+                    render();
+                    showSuccessToast(json.message || 'Deadline berhasil diset!');
+                }
+            });
+            
+            closeDueDateModal();
+        }
+
+        function formatDueDate(dateStr) {
+            if(!dateStr) return '';
+            const date = new Date(dateStr + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dueDate = new Date(date);
+            dueDate.setHours(0, 0, 0, 0);
+            
+            const diffTime = dueDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if(diffDays < 0) return `<span class="text-red-500 font-bold">Overdue!</span>`;
+            if(diffDays === 0) return `<span class="text-amber-500 font-bold">Today</span>`;
+            if(diffDays === 1) return `<span class="text-blue-500">Tomorrow</span>`;
+            if(diffDays <= 7) return `<span class="text-slate-600 dark:text-slate-400">${diffDays} days</span>`;
+            
+            return `<span class="text-slate-500">${date.toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>`;
+        }
+
+        function isDueSoon(dateStr) {
+            if(!dateStr) return false;
+            const date = new Date(dateStr + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dueDate = new Date(date);
+            dueDate.setHours(0, 0, 0, 0);
+            
+            const diffTime = dueDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays <= 1;
+        }
+
+        // --- STREAK FUNCTIONS ---
+        function updateStreakUI(streak) {
+            streakData = streak;
+            document.getElementById('currentStreak').innerText = streak.current || 0;
+            document.getElementById('longestStreak').innerText = streak.longest || 0;
+        }
+
+        function showStreakToast(streak) {
+            const toast = document.getElementById('streakToast');
+            const text = document.getElementById('streakText');
+            
+            text.innerText = `${streak.current} hari berturut-turut! Keep it up!`;
+            
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+            toast.classList.remove('pointer-events-none');
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(-1rem)';
+                toast.classList.add('pointer-events-none');
+            }, 3000);
+        }
+
+        function showStreakDetail() {
+            alert(`🔥 Streak Stats:\n\nCurrent: ${streakData.current} days\nLongest: ${streakData.longest} days\nLast active: ${streakData.last_date || 'Never'}\n\n${streakData.current >= 7 ? '🏆 Amazing consistency!' : 'Keep going to build your streak!'}`);
+        }
 
         // --- NOTIFICATION FUNCTIONS ---
         function showMotivation() {
@@ -373,6 +705,12 @@
                     // Sync Data
                     tasks = json.data || [];
                     saveLocal(); // Update cache
+                    
+                    // Update Streak
+                    if(json.streak) {
+                        updateStreakUI(json.streak);
+                    }
+                    
                     render();
                 }
             } catch (e) {
@@ -443,22 +781,23 @@
                     const delay = i < 10 ? `animation-delay: ${i * 50}ms` : '';
                     
                     // Tag Color
-                    const tagColor = t.category_color && t.category_color !== 'transparent' 
-                        ? `border-l-4 border-[${t.category_color}]` 
-                        : 'border-l-4 border-transparent';
-                    
-                    // Inline style untuk warna border dynamic karena Tailwind arbitrary value perlu full string di class
                     const borderStyle = t.category_color && t.category_color !== 'transparent' ? `border-left-color: ${t.category_color}` : '';
+                    
+                    // Due date highlight
+                    const dueSoonClass = t.due_date && isDueSoon(t.due_date) ? 'ring-2 ring-red-500/50' : '';
 
                     const li = document.createElement('li');
                     li.className = `
                         group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-4 rounded-2xl 
                         border border-white dark:border-slate-700 shadow-sm flex items-center gap-4 
                         transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:bg-white dark:hover:bg-slate-700
-                        ${t.is_completed == 1 ? 'opacity-60 scale-98 grayscale' : 'animate-slide-up'}
+                        ${t.is_completed == 1 ? 'opacity-60 scale-98 grayscale' : 'animate-slide-up'} ${dueSoonClass}
                     `;
-                    li.style = `${delay}; ${borderStyle}`;
+                    li.style = `${delay}; ${borderStyle}; border-left-width: 4px;`;
                     li.setAttribute('data-id', t.id);
+
+                    const pomodoroCount = t.pomodoro_count ? `<span class="text-xs text-slate-400">🍅 ${t.pomodoro_count}</span>` : '';
+                    const dueDateDisplay = t.due_date ? `<span class="text-xs ml-2">${formatDueDate(t.due_date)}</span>` : '';
 
                     li.innerHTML = `
                         <div class="relative w-6 h-6 flex-shrink-0">
@@ -467,16 +806,33 @@
                                 onchange="toggleTask(${t.id}, this)">
                         </div>
                         
-                        <span class="flex-grow font-semibold text-slate-700 dark:text-slate-200 text-sm sm:text-base break-words transition-all ${t.is_completed == 1 ? 'line-through text-slate-400 italic' : ''}">
-                            ${t.task_name}
-                        </span>
-                        
-                        <div class="item-actions ${isEditMode ? 'flex' : 'hidden'} gap-2">
-                            <div class="drag-handle w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center cursor-grab text-slate-500 hover:text-accent">
-                                <i class="ph-bold ph-dots-six-vertical"></i>
+                        <div class="flex-grow">
+                            <span class="font-semibold text-slate-700 dark:text-slate-200 text-sm sm:text-base break-words transition-all block ${t.is_completed == 1 ? 'line-through text-slate-400 italic' : ''}">
+                                ${t.task_name}
+                            </span>
+                            <div class="flex items-center gap-2 mt-1">
+                                ${pomodoroCount}
+                                ${dueDateDisplay}
                             </div>
-                            <div onclick="deleteTask(${t.id})" class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center cursor-pointer text-red-500 hover:bg-red-500 hover:text-white transition">
-                                <i class="ph-bold ph-trash"></i>
+                        </div>
+                        
+                        <div class="flex gap-2 items-center">
+                            ${!t.is_completed ? `
+                                <button onclick="openPomodoroModal(${t.id})" class="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition opacity-0 group-hover:opacity-100" title="Pomodoro">
+                                    <i class="ph-bold ph-timer"></i>
+                                </button>
+                                <button onclick="openDueDateModal(${t.id})" class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 hover:bg-blue-100 transition opacity-0 group-hover:opacity-100" title="Set Deadline">
+                                    <i class="ph-bold ph-calendar"></i>
+                                </button>
+                            ` : ''}
+                            
+                            <div class="item-actions ${isEditMode ? 'flex' : 'hidden'} gap-2">
+                                <div class="drag-handle w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-600 flex items-center justify-center cursor-grab text-slate-500 hover:text-accent">
+                                    <i class="ph-bold ph-dots-six-vertical"></i>
+                                </div>
+                                <div onclick="deleteTask(${t.id})" class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center cursor-pointer text-red-500 hover:bg-red-500 hover:text-white transition">
+                                    <i class="ph-bold ph-trash"></i>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -515,6 +871,17 @@
                         tasks = json.data;
                         saveLocal();
                         render();
+                        
+                        // Update streak
+                        if(json.streak) {
+                            const oldStreak = streakData.current;
+                            updateStreakUI(json.streak);
+                            
+                            // Show streak toast if increased
+                            if(json.streak.current > oldStreak && cb.checked) {
+                                showStreakToast(json.streak);
+                            }
+                        }
                     }
                 });
             }
@@ -556,7 +923,9 @@
                     task_name: val, 
                     is_completed: 0, 
                     list_order: tasks.length,
-                    category_color: color 
+                    category_color: color,
+                    due_date: null,
+                    pomodoro_count: 0
                 };
                 
                 tasks.push(newTask);
@@ -651,10 +1020,11 @@
             incompleteTasks.forEach(t => {
                 const borderStyle = t.category_color && t.category_color !== 'transparent' ? `border-left-color: ${t.category_color}` : '';
                 const div = document.createElement('div');
-                div.className = 'p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border-l-4 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer transition';
-                div.style = borderStyle;
+                div.className = 'p-4 bg-slate-50 dark:bg-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer transition';
+                div.style = borderStyle + '; border-left-width: 4px;';
                 div.innerHTML = `
                     <p class="font-semibold text-sm">${t.task_name}</p>
+                    ${t.due_date ? `<p class="text-xs text-slate-500 mt-1">${formatDueDate(t.due_date)}</p>` : ''}
                 `;
                 div.onclick = () => selectFocusTask(t.id);
                 listEl.appendChild(div);
@@ -744,60 +1114,60 @@
                 const json = await res.json();
                 
                 if(json.status === 'success') {
-                    closeModal();
                     isLoggedIn = true;
-                    isEditMode = false;
                     localStorage.setItem('cheva_auth', 'true');
                     updateAuthUI(true);
-                    init();
-                } else {
-                    document.getElementById('errorMsg').classList.remove('hidden');
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        function logout() {
-            if(!confirm('Yakin ingin logout?')) return;
-            fetch('/api/api.php?action=logout').then(() => {
-                localStorage.setItem('cheva_auth', 'false');
-                location.reload();
-            });
-        }
-
-        async function apiCall(action, data = {}) {
-            try {
-                const res = await fetch(`/api/api.php?action=${action}`, {
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                const json = await res.json();
-                
-                if(json.status === 'success') {
+                    closeModal();
+                    
+                    // Reload data
                     tasks = json.data || [];
                     saveLocal();
-                    render();
-                    if(json.message) {
-                        showSuccessToast(json.message);
+                    
+                    // Update Streak
+                    if(json.streak) {
+                        updateStreakUI(json.streak);
                     }
+                    
+                    render();
+                } else {
+                    document.getElementById('errorMsg').classList.remove('hidden');
+                    document.getElementById('passwordInput').value = '';
                 }
-            } catch(e) {
-                console.error(e);
+            } catch (e) {
+                alert('Error: ' + e.message);
             }
         }
 
-        async function apiCallWithConfirm(action, data = {}, confirmMsg) {
-            if(!confirm(confirmMsg)) return;
-            await apiCall(action, data);
+        function logout() {
+            if(!confirm('Yakin mau logout?')) return;
+            
+            isLoggedIn = false;
+            isEditMode = false;
+            localStorage.setItem('cheva_auth', 'false');
+            updateAuthUI(false);
+            
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('profileBtn').classList.remove('bg-indigo-500', 'text-white', 'border-transparent');
+            
+            destroySortable();
+            
+            // Logout API call
+            fetch('/api/api.php?action=logout', {
+                method: 'POST'
+            }).then(res => res.json()).then(json => {
+                console.log('Logged out from server');
+            });
         }
 
         function deleteTask(id) {
-            if(!confirm("Yakin hapus?")) return;
+            if(!confirm('Yakin mau hapus tugas ini?')) return;
             
-            tasks = tasks.filter(t => t.id != id); // Optimistic UI
+            // Optimistic UI
+            tasks = tasks.filter(t => t.id != id);
             saveLocal();
             render();
             
+            // API Call
             fetch('/api/api.php?action=delete', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -812,7 +1182,29 @@
             });
         }
 
-        // Start App
+        function apiCallWithConfirm(action, payload, confirmMsg) {
+            if(!confirm(confirmMsg)) return;
+            
+            fetch(`/api/api.php?action=${action}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            }).then(res => res.json()).then(json => {
+                if(json.status === 'success') {
+                    tasks = json.data || [];
+                    saveLocal();
+                    render();
+                    showSuccessToast(json.message || 'Berhasil!');
+                    
+                    // Update streak if available
+                    if(json.streak) {
+                        updateStreakUI(json.streak);
+                    }
+                }
+            });
+        }
+
+        // Initialize App
         init();
     </script>
 </body>
