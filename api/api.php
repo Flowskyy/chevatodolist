@@ -66,7 +66,7 @@ function saveStreak($streakData) {
     return redisCommand('SET', ['streak_data', json_encode($streakData)]);
 }
 
-// --- LOGIKA STREAK YANG DIPERBAIKI ---
+// --- LOGIKA STREAK YANG DIPERBAIKI (SIMPLIFIED) ---
 function refreshStreak($tasks) {
     $streak = getStreak();
     
@@ -86,29 +86,36 @@ function refreshStreak($tasks) {
     
     // CASE 1: Ada tugas yang selesai (minimal 1)
     if ($totalCompleted > 0) {
-        // Jika last_date adalah hari ini, berarti sudah ada aktivitas hari ini
-        if ($streak['last_date'] === $today) {
-            // Streak tetap, tidak berubah (sudah dicatat hari ini)
+        // Sub-case A: Belum ada streak sama sekali (first time)
+        if (empty($streak['last_date'])) {
+            $streak['current'] = 1;
+            $streak['last_date'] = $today;
+            $streak['longest'] = 1;
         }
-        // Jika last_date adalah kemarin, streak berlanjut
+        // Sub-case B: Last date adalah KEMARIN (streak continues)
         else if ($streak['last_date'] === $yesterday) {
             $streak['current']++;
             $streak['last_date'] = $today;
-            
-            // Update rekor terpanjang
             if ($streak['current'] > ($streak['longest'] ?? 0)) {
                 $streak['longest'] = $streak['current'];
             }
         }
-        // Jika last_date bukan kemarin dan bukan hari ini, mulai streak baru
+        // Sub-case C: Last date adalah HARI INI (already counted today)
+        else if ($streak['last_date'] === $today) {
+            // Jika current = 0 tapi last_date = today, berarti data corrupt, fix it
+            if ($streak['current'] == 0) {
+                $streak['current'] = 1;
+                if ($streak['current'] > ($streak['longest'] ?? 0)) {
+                    $streak['longest'] = $streak['current'];
+                }
+            }
+            // Otherwise, do nothing (sudah tercatat hari ini)
+        }
+        // Sub-case D: Last date adalah >1 hari yang lalu (streak broken, restart)
         else {
             $streak['current'] = 1;
             $streak['last_date'] = $today;
-            
-            // Update rekor terpanjang jika perlu
-            if ($streak['current'] > ($streak['longest'] ?? 0)) {
-                $streak['longest'] = $streak['current'];
-            }
+            // Longest tetap dipertahankan
         }
     } 
     // CASE 2: TIDAK ADA tugas yang selesai (0 completed)
@@ -116,13 +123,11 @@ function refreshStreak($tasks) {
         // Jika last_date adalah hari ini, berarti baru saja di-uncheck semua
         if ($streak['last_date'] === $today) {
             // Batalkan hari ini, mundur ke kemarin
-            if ($streak['current'] > 0) {
-                $streak['current']--;
-            }
+            $streak['current'] = max(0, $streak['current'] - 1);
             // Set last_date ke kemarin jika masih ada streak, null jika sudah 0
             $streak['last_date'] = $streak['current'] > 0 ? $yesterday : null;
         }
-        // Jika sudah >1 hari tidak ada aktivitas, reset streak
+        // Jika last_date bukan hari ini dan ada streak, cek apakah perlu reset
         else if (!empty($streak['last_date']) && $streak['last_date'] < $yesterday) {
             $streak['current'] = 0;
             $streak['last_date'] = null;
@@ -146,26 +151,7 @@ switch ($action) {
             exit;
         }
         $tasks = getTasks();
-        
-        // PENTING: Cek apakah ada task completed, tapi streak masih 0 dan last_date hari ini
-        // Ini berarti data inconsistent, perlu di-refresh
-        $streak = getStreak();
-        $today = date('Y-m-d');
-        $hasCompleted = false;
-        foreach ($tasks as $t) {
-            if (!empty($t['is_completed']) && ($t['is_completed'] == 1 || $t['is_completed'] === true)) {
-                $hasCompleted = true;
-                break;
-            }
-        }
-        
-        // Jika ada task completed tapi streak = 0 dan last_date = today, fix it
-        if ($hasCompleted && $streak['current'] == 0 && $streak['last_date'] === $today) {
-            $streak['current'] = 1;
-            $streak['longest'] = max(1, $streak['longest'] ?? 0);
-            saveStreak($streak);
-        }
-        
+        $streak = refreshStreak($tasks); // Selalu refresh streak
         echo json_encode(['status' => 'success', 'data' => $tasks, 'isAdmin' => isAdmin(), 'streak' => $streak]);
         break;
 
