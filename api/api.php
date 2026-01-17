@@ -243,13 +243,24 @@ switch ($action) {
         if (!isset($_SESSION['logged_in'])) exit;
         $tasks = getTasks();
         
+        error_log("=== TOGGLE ACTION ===");
+        error_log("Input ID: " . ($input['id'] ?? 'none'));
+        error_log("Tasks before toggle: " . json_encode($tasks));
+        
         foreach ($tasks as &$t) { 
             if ($t['id'] == $input['id']) {
                 $t['is_completed'] = empty($t['is_completed']) ? 1 : 0;
+                error_log("Toggled task ID " . $t['id'] . " to: " . $t['is_completed']);
             } 
         }
         saveTasks($tasks);
+        
+        error_log("Tasks after toggle: " . json_encode($tasks));
+        
         $streak = refreshStreak($tasks);
+        
+        error_log("Final streak: " . json_encode($streak));
+        
         echo json_encode(['status' => 'success', 'data' => getTasks(), 'streak' => $streak]);
         break;
 
