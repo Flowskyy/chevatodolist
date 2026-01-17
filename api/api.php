@@ -76,6 +76,12 @@ function refreshStreak($tasks) {
     $today = date('Y-m-d');
     $yesterday = date('Y-m-d', strtotime('-1 day'));
     
+    // PENTING: Jika current = 0, last_date HARUS null (fix corrupt state)
+    if ($streak['current'] == 0 && !empty($streak['last_date'])) {
+        $streak['last_date'] = null;
+        saveStreak($streak);
+    }
+    
     // Hitung TOTAL tugas yang selesai
     $totalCompleted = 0;
     foreach ($tasks as $t) {
@@ -90,7 +96,7 @@ function refreshStreak($tasks) {
         if (empty($streak['last_date'])) {
             $streak['current'] = 1;
             $streak['last_date'] = $today;
-            $streak['longest'] = 1;
+            $streak['longest'] = max(1, $streak['longest'] ?? 0);
         }
         // Sub-case B: Last date adalah KEMARIN (streak continues)
         else if ($streak['last_date'] === $yesterday) {
