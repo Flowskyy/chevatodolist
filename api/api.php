@@ -38,7 +38,7 @@ function redisCommand($command, $args = []) {
 function getTasks() {
     $tasksJson = redisCommand('GET', ['tasks']);
     if (!$tasksJson || $tasksJson === '') {
-        $default = [['id' => 1, 'task_name' => 'Selamat datang!', 'list_order' => 1, 'is_completed' => false, 'due_date' => null]];
+        $default = [['id' => 1, 'task_name' => 'Selamat datang!', 'list_order' => 1, 'is_completed' => false]];
         saveTasks($default);
         return $default;
     }
@@ -50,49 +50,6 @@ function getTasks() {
 
 function saveTasks($tasks) {
     return redisCommand('SET', ['tasks', json_encode($tasks)]);
-}
-
-function getStreak() {
-    $streakJson = redisCommand('GET', ['streak_data']);
-    if (!$streakJson) {
-        return ['current' => 0, 'longest' => 0, 'last_date' => null];
-    }
-    return json_decode($streakJson, true);
-}
-
-function saveStreak($streakData) {
-    return redisCommand('SET', ['streak_data', json_encode($streakData)]);
-}
-
-function updateStreak() {
-    $streak = getStreak();
-    $today = date('Y-m-d');
-    $lastDate = $streak['last_date'];
-    
-    if ($lastDate === $today) {
-        // Already updated today
-        return $streak;
-    }
-    
-    if ($lastDate === null) {
-        // First time
-        $streak = ['current' => 1, 'longest' => 1, 'last_date' => $today];
-    } else {
-        $yesterday = date('Y-m-d', strtotime('-1 day'));
-        if ($lastDate === $yesterday) {
-            // Continue streak
-            $streak['current']++;
-            $streak['longest'] = max($streak['longest'], $streak['current']);
-            $streak['last_date'] = $today;
-        } else {
-            // Streak broken
-            $streak['current'] = 1;
-            $streak['last_date'] = $today;
-        }
-    }
-    
-    saveStreak($streak);
-    return $streak;
 }
 
 $action = $_GET['action'] ?? '';
@@ -107,18 +64,7 @@ switch ($action) {
             echo json_encode(['status' => 'locked', 'isAdmin' => false]);
             exit;
         }
-        $streak = getStreak();
-        echo json_encode([
-            'status' => 'success', 
-            'data' => getTasks(), 
-            'isAdmin' => isAdmin(),
-            'streak' => $streak
-        ]);
-        break;
-
-    case 'get_streak':
-        if (!isset($_SESSION['logged_in'])) exit;
-        echo json_encode(['status' => 'success', 'streak' => getStreak()]);
+        echo json_encode(['status' => 'success', 'data' => getTasks(), 'isAdmin' => isAdmin()]);
         break;
 
     case 'login':
@@ -144,7 +90,6 @@ switch ($action) {
     case 'uncheck_all':
     case 'swap':
     case 'reorder':
-    case 'update_due_date':
         if (!isAdmin()) { echo json_encode(['status' => 'error', 'message' => 'Unauthorized']); exit; }
         
         $tasks = getTasks();
@@ -155,9 +100,7 @@ switch ($action) {
                 'task_name' => trim($input['task']), 
                 'list_order' => $max + 1, 
                 'is_completed' => false,
-                'category_color' => $input['color'] ?? 'transparent',
-                'due_date' => $input['due_date'] ?? null,
-                'pomodoro_count' => 0
+                'category_color' => $input['color'] ?? 'transparent'
             ];
             $tasks[] = $newTask;
             saveTasks($tasks);
@@ -167,7 +110,7 @@ switch ($action) {
             saveTasks($tasks);
             echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Tugas berhasil dihapus!']);
         } elseif ($action === 'reset') {
-            $tasks = [['id' => 1, 'task_name' => 'List direset', 'list_order' => 1, 'is_completed' => false, 'due_date' => null]];
+            $tasks = [['id' => 1, 'task_name' => 'List direset', 'list_order' => 1, 'is_completed' => false]];
             saveTasks($tasks);
             echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'List berhasil direset!']);
         } elseif ($action === 'clear_completed') {
@@ -186,6 +129,7 @@ switch ($action) {
             saveTasks($tasks);
             echo json_encode(['status' => 'success', 'data' => getTasks()]);
         } elseif ($action === 'reorder') {
+            // Update semua list_order berdasarkan array baru
             $newOrder = $input['order'] ?? [];
             foreach ($tasks as &$t) {
                 $index = array_search($t['id'], $newOrder);
@@ -195,47 +139,13 @@ switch ($action) {
             }
             saveTasks($tasks);
             echo json_encode(['status' => 'success', 'data' => getTasks()]);
-        } elseif ($action === 'update_due_date') {
-            foreach ($tasks as &$t) {
-                if ($t['id'] == $input['id']) {
-                    $t['due_date'] = $input['due_date'];
-                }
-            }
-            saveTasks($tasks);
-            echo json_encode(['status' => 'success', 'data' => getTasks(), 'message' => 'Deadline berhasil diupdate!']);
         }
         break;
 
     case 'toggle':
         if (!isset($_SESSION['logged_in'])) exit;
         $tasks = getTasks();
-        $wasCompleted = false;
-        foreach ($tasks as &$t) { 
-            if ($t['id'] == $input['id']) {
-                $t['is_completed'] = !$t['is_completed'];
-                if ($t['is_completed']) {
-                    $wasCompleted = true;
-                }
-            }
-        }
-        saveTasks($tasks);
-        
-        $streak = getStreak();
-        if ($wasCompleted) {
-            $streak = updateStreak();
-        }
-        
-        echo json_encode(['status' => 'success', 'data' => getTasks(), 'streak' => $streak]);
-        break;
-
-    case 'pomodoro_complete':
-        if (!isset($_SESSION['logged_in'])) exit;
-        $tasks = getTasks();
-        foreach ($tasks as &$t) {
-            if ($t['id'] == $input['id']) {
-                $t['pomodoro_count'] = ($t['pomodoro_count'] ?? 0) + 1;
-            }
-        }
+        foreach ($tasks as &$t) { if ($t['id'] == $input['id']) $t['is_completed'] = !$t['is_completed']; }
         saveTasks($tasks);
         echo json_encode(['status' => 'success', 'data' => getTasks()]);
         break;
