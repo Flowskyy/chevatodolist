@@ -48,7 +48,7 @@ function getTasks() {
     $needsSave = false;
     foreach ($tasks as &$t) {
         if (!isset($t['completed_date'])) {
-            $t['completed_date'] = null; // Old tasks don't count for today's streak
+            $t['completed_date'] = null;
             $needsSave = true;
         }
     }
@@ -77,42 +77,94 @@ function saveStreak($streakData) {
     return redisCommand('SET', ['streak_data', json_encode($streakData)]);
 }
 
-// --- LOGIKA STREAK YANG DIPERBAIKI (SIMPLIFIED) ---
+function getNotifiedDeadlines() {
+    $json = redisCommand('GET', ['notified_deadlines']);
+    if (!$json || $json === '') return [];
+    $data = json_decode($json, true);
+    return is_array($data) ? $data : [];
+}
+
+function saveNotifiedDeadlines($notified) {
+    return redisCommand('SET', ['notified_deadlines', json_encode($notified)]);
+}
+
+function checkDeadlineNotifications($tasks) {
+    date_default_timezone_set('Asia/Jakarta');
+    $today = date('Y-m-d');
+    $tomorrow = date('Y-m-d', strtotime('+1 day'));
+    
+    $notified = getNotifiedDeadlines();
+    $notifications = [];
+    
+    foreach ($tasks as $task) {
+        if (empty($task['is_completed']) && !empty($task['due_date'])) {
+            $dueDate = $task['due_date'];
+            $taskId = $task['id'];
+            $notifyKey = $taskId . '_' . $dueDate;
+            
+            // Notifikasi untuk HARI INI (deadline today)
+            if ($dueDate === $today && !in_array($notifyKey . '_today', $notified)) {
+                $notifications[] = [
+                    'type' => 'today',
+                    'task_name' => $task['task_name'],
+                    'due_date' => $dueDate
+                ];
+                $notified[] = $notifyKey . '_today';
+            }
+            
+            // Notifikasi untuk BESOK (deadline tomorrow)
+            if ($dueDate === $tomorrow && !in_array($notifyKey . '_tomorrow', $notified)) {
+                $notifications[] = [
+                    'type' => 'tomorrow',
+                    'task_name' => $task['task_name'],
+                    'due_date' => $dueDate
+                ];
+                $notified[] = $notifyKey . '_tomorrow';
+            }
+        }
+    }
+    
+    // Clean up old notifications (lebih dari 7 hari)
+    $weekAgo = date('Y-m-d', strtotime('-7 days'));
+    $notified = array_filter($notified, function($n) use ($weekAgo) {
+        $parts = explode('_', $n);
+        if (count($parts) >= 2) {
+            $date = $parts[1];
+            return $date >= $weekAgo;
+        }
+        return true;
+    });
+    
+    saveNotifiedDeadlines(array_values($notified));
+    return $notifications;
+}
+
 function refreshStreak($tasks) {
     $streak = getStreak();
-    
-    // Set timezone ke WIB (Indonesia)
     date_default_timezone_set('Asia/Jakarta');
-    
     $today = date('Y-m-d');
     $yesterday = date('Y-m-d', strtotime('-1 day'));
     
-    // PENTING: Jika current = 0, last_date HARUS null (fix corrupt state)
     if ($streak['current'] == 0 && !empty($streak['last_date'])) {
         $streak['last_date'] = null;
         saveStreak($streak);
     }
     
-    // Hitung HANYA tugas yang di-complete HARI INI
     $completedToday = 0;
     foreach ($tasks as $t) {
         if (!empty($t['is_completed']) && ($t['is_completed'] == 1 || $t['is_completed'] === true)) {
-            // Cek apakah completed_date = hari ini
             if (isset($t['completed_date']) && $t['completed_date'] === $today) {
                 $completedToday++;
             }
         }
     }
     
-    // CASE 1: Ada tugas yang di-complete HARI INI (minimal 1)
     if ($completedToday > 0) {
-        // Sub-case A: Belum ada streak sama sekali (first time)
         if (empty($streak['last_date'])) {
             $streak['current'] = 1;
             $streak['last_date'] = $today;
             $streak['longest'] = max(1, $streak['longest'] ?? 0);
         }
-        // Sub-case B: Last date adalah KEMARIN (streak continues)
         else if ($streak['last_date'] === $yesterday) {
             $streak['current']++;
             $streak['last_date'] = $today;
@@ -120,27 +172,19 @@ function refreshStreak($tasks) {
                 $streak['longest'] = $streak['current'];
             }
         }
-        // Sub-case C: Last date adalah HARI INI (already counted today)
         else if ($streak['last_date'] === $today) {
-            // Do nothing - sudah tercatat hari ini
+            // Do nothing
         }
-        // Sub-case D: Last date adalah >1 hari yang lalu (streak broken, restart)
         else {
             $streak['current'] = 1;
             $streak['last_date'] = $today;
-            // Longest tetap dipertahankan
         }
     } 
-    // CASE 2: TIDAK ADA tugas yang di-complete hari ini (0 completed today)
     else {
-        // Jika last_date adalah hari ini, berarti baru saja di-uncheck semua task hari ini
         if ($streak['last_date'] === $today) {
-            // Batalkan hari ini, mundur ke kemarin
             $streak['current'] = max(0, $streak['current'] - 1);
-            // Set last_date ke kemarin jika masih ada streak, null jika sudah 0
             $streak['last_date'] = $streak['current'] > 0 ? $yesterday : null;
         }
-        // Jika last_date bukan hari ini dan ada streak, cek apakah perlu reset
         else if (!empty($streak['last_date']) && $streak['last_date'] < $yesterday) {
             $streak['current'] = 0;
             $streak['last_date'] = null;
@@ -164,8 +208,19 @@ switch ($action) {
             exit;
         }
         $tasks = getTasks();
-        $streak = getStreak(); // Hanya GET, jangan refresh!
-        echo json_encode(['status' => 'success', 'data' => $tasks, 'isAdmin' => isAdmin(), 'streak' => $streak]);
+        $streak = getStreak();
+        $deadlineNotifs = checkDeadlineNotifications($tasks);
+        echo json_encode(['status' => 'success', 'data' => $tasks, 'isAdmin' => isAdmin(), 'streak' => $streak, 'deadline_notifications' => $deadlineNotifs]);
+        break;
+
+    case 'check_deadlines':
+        if (!isset($_SESSION['logged_in'])) {
+            echo json_encode(['status' => 'success', 'notifications' => []]);
+            exit;
+        }
+        $tasks = getTasks();
+        $notifications = checkDeadlineNotifications($tasks);
+        echo json_encode(['status' => 'success', 'notifications' => $notifications]);
         break;
 
     case 'get_streak':
@@ -183,7 +238,8 @@ switch ($action) {
             session_regenerate_id(true);
             $tasks = getTasks();
             $streak = refreshStreak($tasks);
-            echo json_encode(['status' => 'success', 'data' => $tasks, 'streak' => $streak]);
+            $deadlineNotifs = checkDeadlineNotifications($tasks);
+            echo json_encode(['status' => 'success', 'data' => $tasks, 'streak' => $streak, 'deadline_notifications' => $deadlineNotifs]);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Password salah']);
         }
@@ -259,11 +315,10 @@ switch ($action) {
                 $wasCompleted = !empty($t['is_completed']) && ($t['is_completed'] == 1 || $t['is_completed'] === true);
                 $t['is_completed'] = $wasCompleted ? 0 : 1;
                 
-                // Track completion date
                 if ($t['is_completed'] == 1) {
-                    $t['completed_date'] = $today; // Set tanggal saat di-check
+                    $t['completed_date'] = $today;
                 } else {
-                    $t['completed_date'] = null; // Hapus tanggal saat di-uncheck
+                    $t['completed_date'] = null;
                 }
             } 
         }
